@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1081372553644051837
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1081372553644051714}
+  - component: {fileID: 1081372553644051715}
+  m_Layer: 0
+  m_Name: LevelManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1081372553644051714
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081372553644051837}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1127389253044551659}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1081372553644051715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081372553644051837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a81da3f2bdc4bea448040fa179fc56bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  surface: {fileID: 0}
+  levelInfoList:
+  - stageNo: 0
+    waveMaxMonsterNum: 0a0000000a0000000a0000000a00000000000000
+  - stageNo: 1
+    waveMaxMonsterNum: 0a00000014000000280000001e00000014000000
+  stagePos: {fileID: 0}
+  MonsterRespawnPos: []
+  NextStagePortal: {fileID: 0}
+--- !u!1 &1127389253044551658
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1127389253044551659}
+  - component: {fileID: 1127389253044551656}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1127389253044551659
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1127389253044551658}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 1081372553644051714}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1127389253044551656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1127389253044551658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acfb1e2a7d20fc940ae227763673fa1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  levelManager: {fileID: 1081372553644051715}
+  cam_Follow: {fileID: 0}
+  waveText: {fileID: 0}
+  ResultPanel: {fileID: 0}
+  currentBullet: {fileID: 0}
+  currentGoldText: {fileID: 0}
+  SliderObj: {fileID: 0}
+  hpSlider: {fileID: 0}
+  currentWave: {fileID: 0}
+  remainEnemyCnt: {fileID: 0}
+  playerPrefabList:
+  - {fileID: 9119469128803538964, guid: 750ea19c0a770934ca2992783e58891e, type: 3}
+  nowPlayerCharacter: {fileID: 0}
+  playerScript: {fileID: 0}
+  nowGameState: 0
+  nowGameResultState: 0
+  isStartLevel: 0
+  isWaitStart: 0
+  startNextWave: 0
+  isUsingRefreshUI: 0
+  currentIntervalTime: 0
+  nowWave: 0
+  maxIntervalTime: 5
+  nowStageNum: 0
+  nowMonsterCnt: 0
+  killMonsterCnt: 0
+  nowGetCoin: 0

@@ -1,0 +1,223 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3369874880968306416
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3369874880968306419}
+  m_Layer: 0
+  m_Name: PlayerBulletPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3369874880968306419
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3369874880968306416}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 3369874882042261866}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3369874881254781171
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3369874881254781170}
+  m_Layer: 0
+  m_Name: MonsterPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3369874881254781170
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3369874881254781171}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 3369874882042261866}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3369874882042261867
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3369874882042261866}
+  - component: {fileID: 3369874882042261869}
+  m_Layer: 0
+  m_Name: PoolList
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3369874882042261866
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3369874882042261867}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 3369874881254781170}
+  - {fileID: 3369874880968306419}
+  - {fileID: 3369874882599939008}
+  - {fileID: 3369874882530864734}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3369874882042261869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3369874882042261867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ee5b25749af7674dae5a16195d83f9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  objectPool:
+  - poolitemType: 1
+    poolItemName: EnemyA
+    prefab: {fileID: 2714729840850608950, guid: 00b3767649e990f4ab4da86cbda390e9, type: 3}
+    poolCount: 10
+    poolList: []
+  - poolitemType: 1
+    poolItemName: EnemyB
+    prefab: {fileID: 8208083679593661785, guid: 74d25d8b07a4b924ebc66c9754754156, type: 3}
+    poolCount: 10
+    poolList: []
+  - poolitemType: 1
+    poolItemName: EnemyC
+    prefab: {fileID: 8201186632908149617, guid: 6351c580a73af4246a7a74505c313add, type: 3}
+    poolCount: 10
+    poolList: []
+  - poolitemType: 1
+    poolItemName: EnemyBoss
+    prefab: {fileID: 928873372475188003, guid: ab5fdf5a25585574dbbf158efb8c852e, type: 3}
+    poolCount: 1
+    poolList: []
+  - poolitemType: 2
+    poolItemName: HandGun
+    prefab: {fileID: 1831563097874793556, guid: 20e77e200fda4c844a3eb786cc0b1d1b, type: 3}
+    poolCount: 20
+    poolList: []
+  - poolitemType: 2
+    poolItemName: SubMachineGun
+    prefab: {fileID: 2346145855496582816, guid: 81c808008e522dd4c852c73cb72ef8a7, type: 3}
+    poolCount: 30
+    poolList: []
+  - poolitemType: 2
+    poolItemName: HandShotGun
+    prefab: {fileID: 2346145855496582816, guid: 9b37f55a7fd53d240ab164f3c1843b3c, type: 3}
+    poolCount: 20
+    poolList: []
+  - poolitemType: 3
+    poolItemName: EnemyCBullet
+    prefab: {fileID: 5541515903536719384, guid: 57970c48923272145b95d0438f5fcf8a, type: 3}
+    poolCount: 10
+    poolList: []
+  - poolitemType: 3
+    poolItemName: BossBullet
+    prefab: {fileID: 2426908441383822853, guid: 1109dcce2f4e10c408700096d7590aa5, type: 3}
+    poolCount: 10
+    poolList: []
+  - poolitemType: 3
+    poolItemName: BossRock
+    prefab: {fileID: 5403949573660584607, guid: b732876d0ebeaf84f8187dee54e1f918, type: 3}
+    poolCount: 3
+    poolList: []
+  MonsterPool: {fileID: 3369874881254781170}
+  PlayerBulletPool: {fileID: 3369874880968306419}
+  MonsterBulletPool: {fileID: 3369874882599939008}
+--- !u!1 &3369874882530864735
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3369874882530864734}
+  m_Layer: 0
+  m_Name: EffectPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3369874882530864734
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3369874882530864735}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 3369874882042261866}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3369874882599939009
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3369874882599939008}
+  m_Layer: 0
+  m_Name: MonsterBulletPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3369874882599939008
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3369874882599939009}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 3369874882042261866}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
