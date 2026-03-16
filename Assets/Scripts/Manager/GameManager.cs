@@ -244,15 +244,33 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSecondsRealtime(StageClearPopupDuration);
 
         nowStageNum++;
-        string nextStageKey = "Stage" + (nowStageNum + 1);
-        if (StageManager.Instance != null && StageManager.Instance.HasStage(nextStageKey))
-        {
-            StageManager.Instance.ShowStage(nextStageKey, false);
-        }
-        else
-        {
-            GoLobby();
-        }
+        StartNextStageOnCurrentMap();
+    }
+
+    void StartNextStageOnCurrentMap()
+    {
+        if (ObjectPool.instance != null)
+            ObjectPool.instance.AllHide();
+
+        nowMonsterCnt = 0;
+        killMonsterCnt = 0;
+        nowGameResultState = GameResultState.None;
+        nowGameState = GameState.BattleReady;
+        currentIntervalTime = 0f;
+        isStartLevel = false;
+        isWaitStart = true;
+        isUsingRefreshUI = false;
+        isStageTransitioning = false;
+        Time.timeScale = 1f;
+        isPause = false;
+
+        if (ResultPopup != null)
+            ResultPopup.SetActive(false);
+        if (PausePopup != null)
+            PausePopup.SetActive(false);
+
+        levelManager?.ResetStageRuntime();
+        levelManager?.InitLevel();
     }
 
     public void DelayHideText()
@@ -559,13 +577,13 @@ public class GameManager : MonoBehaviour
         currentGoldText = GameObject.Find("CurrentGoldText")?.GetComponent<Text>();
         currentWave = GameObject.Find("CurrentWaveText")?.GetComponent<Text>();
         remainEnemyCnt = GameObject.Find("EnemyCntText")?.GetComponent<Text>();
-        ResultPopup = GameObject.Find("Canvas/ResultPopup");
-        PausePopup = GameObject.Find("Canvas/PausePopup");
         dodgeBtn = GameObject.Find("DodgeBtn");
         pauseBtn = GameObject.Find("PauseBtn");
         atkBtn = GameObject.Find("AtkBtn_0");
         playerParentPos = GameObject.Find("PlayerPos")?.transform;
         mainCanvas = GameObject.Find("Canvas")?.GetComponent<Canvas>();
+        ResultPopup = mainCanvas != null ? mainCanvas.transform.Find("ResultPopup")?.gameObject : null;
+        PausePopup = mainCanvas != null ? mainCanvas.transform.Find("PausePopup")?.gameObject : null;
 
         if (ResultPopup != null)
             ResultPopup.SetActive(false);
@@ -796,6 +814,15 @@ public class GameManager : MonoBehaviour
     {
         nowGameResultState = gameResult;
         nowGameState = GameState.Result;
+        Time.timeScale = 1f;
+        isPause = false;
+
+        if (gameResult == GameResultState.Lose)
+            ToggleHpbar(true);
+
+        if (ResultPopup == null)
+            RefreshSceneBindings();
+
         if (ResultPopup == null)
             return;
 
@@ -927,6 +954,10 @@ public class GameManager : MonoBehaviour
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 }
+
+
+
+
 
 
 

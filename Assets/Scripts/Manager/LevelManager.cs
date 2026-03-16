@@ -4,6 +4,20 @@ using UnityEngine.AI;
 
 public class LevelManager : MonoBehaviour
 {
+    struct RuntimeStageConfig
+    {
+        public int stageNo;
+        public int minimumKillsForBoss;
+        public float spawnInterval;
+        public int minClusterSize;
+        public int maxClusterSize;
+        public float clusterScatterRadius;
+        public float nextClusterKillRatio;
+        public int minEnemyTypeIndex;
+        public int maxEnemyTypeIndex;
+        public MonsterStageScaling monsterStageScaling;
+    }
+
     public NavMeshSurface surface;
     public StageLevelData[] stageDataList;
     public Transform stagePos;
@@ -71,7 +85,7 @@ public class LevelManager : MonoBehaviour
         InitLevel();
         ResetStageRuntime();
         EnsureDefaultStageData();
-        activeStageIndex = Mathf.Clamp(stageIndex, 0, Mathf.Max(0, stageDataList.Length - 1));
+        activeStageIndex = Mathf.Max(0, stageIndex);
         stageRunning = true;
         SpawnCluster();
     }
@@ -82,13 +96,11 @@ public class LevelManager : MonoBehaviour
             return;
 
         spawnTimer += Time.deltaTime;
-        StageLevelData stageData = GetCurrentStageData();
-        if (stageData == null)
-            return;
+        RuntimeStageConfig stageConfig = GetCurrentStageConfig();
 
-        if (!bossSpawned && regularKillCount >= stageData.minimumKillsForBoss)
+        if (!bossSpawned && regularKillCount >= stageConfig.minimumKillsForBoss)
         {
-            if (spawnTimer >= stageData.spawnInterval && HasLatestClusterReachedThreshold(stageData))
+            if (spawnTimer >= stageConfig.spawnInterval && HasLatestClusterReachedThreshold(stageConfig))
             {
                 SpawnBoss();
                 spawnTimer = 0f;
@@ -99,10 +111,10 @@ public class LevelManager : MonoBehaviour
         if (bossSpawned)
             return;
 
-        if (spawnTimer < stageData.spawnInterval)
+        if (spawnTimer < stageConfig.spawnInterval)
             return;
 
-        if (!HasLatestClusterReachedThreshold(stageData))
+        if (!HasLatestClusterReachedThreshold(stageConfig))
             return;
 
         SpawnCluster();
@@ -125,9 +137,7 @@ public class LevelManager : MonoBehaviour
 
     public string GetStageStatusText(int stageIndex)
     {
-        StageLevelData stageData = GetStageData(stageIndex);
-        if (stageData == null)
-            return "Stage : " + (stageIndex + 1);
+        RuntimeStageConfig stageConfig = GetStageConfig(stageIndex);
 
         if (bossKilled)
             return "Stage " + (stageIndex + 1) + " : Clear";
@@ -135,7 +145,7 @@ public class LevelManager : MonoBehaviour
         if (bossSpawned)
             return "Stage " + (stageIndex + 1) + " : Boss Battle";
 
-        int remainToBoss = Mathf.Max(0, stageData.minimumKillsForBoss - regularKillCount);
+        int remainToBoss = Mathf.Max(0, stageConfig.minimumKillsForBoss - regularKillCount);
         return "Stage " + (stageIndex + 1) + " : Boss in " + remainToBoss + " kills";
     }
 
@@ -164,20 +174,51 @@ public class LevelManager : MonoBehaviour
         stageDataList = new[] { defaultStage };
     }
 
-    StageLevelData GetCurrentStageData()
+    RuntimeStageConfig GetCurrentStageConfig()
     {
-        return GetStageData(activeStageIndex);
+        return GetStageConfig(activeStageIndex);
     }
 
-    StageLevelData GetStageData(int stageIndex)
+    RuntimeStageConfig GetStageConfig(int stageIndex)
     {
-        if (stageDataList == null || stageDataList.Length == 0)
-            return null;
+        EnsureDefaultStageData();
 
-        return stageDataList[Mathf.Clamp(stageIndex, 0, stageDataList.Length - 1)];
+        int safeIndex = Mathf.Max(0, stageIndex);
+        int baseIndex = Mathf.Clamp(safeIndex, 0, stageDataList.Length - 1);
+        StageLevelData baseData = stageDataList[baseIndex];
+        int overflowStageCount = Mathf.Max(0, safeIndex - (stageDataList.Length - 1));
+
+        RuntimeStageConfig config = new RuntimeStageConfig
+        {
+            stageNo = safeIndex + 1,
+            minimumKillsForBoss = baseData.minimumKillsForBoss,
+            spawnInterval = baseData.spawnInterval,
+            minClusterSize = baseData.minClusterSize,
+            maxClusterSize = baseData.maxClusterSize,
+            clusterScatterRadius = baseData.clusterScatterRadius,
+            nextClusterKillRatio = baseData.nextClusterKillRatio,
+            minEnemyTypeIndex = baseData.minEnemyTypeIndex,
+            maxEnemyTypeIndex = baseData.maxEnemyTypeIndex,
+            monsterStageScaling = baseData.monsterStageScaling,
+        };
+
+        // Stage 1/2 keeps authored values. After that, difficulty scales smoothly on the same map.
+        for (int i = 0; i < overflowStageCount; i++)
+        {
+            config.minimumKillsForBoss = Mathf.CeilToInt(config.minimumKillsForBoss * 1.18f);
+            config.minClusterSize = Mathf.Max(1, Mathf.CeilToInt(config.minClusterSize * 1.12f));
+            config.maxClusterSize = Mathf.Max(config.minClusterSize, Mathf.CeilToInt(config.maxClusterSize * 1.14f));
+            config.spawnInterval = Mathf.Max(2.1f, config.spawnInterval * 0.96f);
+            config.clusterScatterRadius = Mathf.Min(6.5f, config.clusterScatterRadius + 0.15f);
+            config.monsterStageScaling.healthPercent += 18f;
+            config.monsterStageScaling.moveSpeedPercent += 6f;
+            config.monsterStageScaling.attackPercent += 10f;
+        }
+
+        return config;
     }
 
-    bool HasLatestClusterReachedThreshold(StageLevelData stageData)
+    bool HasLatestClusterReachedThreshold(RuntimeStageConfig stageConfig)
     {
         if (latestClusterId < 0)
             return true;
@@ -190,19 +231,19 @@ public class LevelManager : MonoBehaviour
             return true;
 
         int killed = clusterKillCounts.ContainsKey(latestClusterId) ? clusterKillCounts[latestClusterId] : 0;
-        return (float)killed / spawned >= stageData.nextClusterKillRatio;
+        return (float)killed / spawned >= stageConfig.nextClusterKillRatio;
     }
 
     void SpawnCluster()
     {
-        StageLevelData stageData = GetCurrentStageData();
-        if (stageData == null || MonsterRespawnPos == null || MonsterRespawnPos.Length == 0)
+        RuntimeStageConfig stageConfig = GetCurrentStageConfig();
+        if (MonsterRespawnPos == null || MonsterRespawnPos.Length == 0)
             return;
 
-        int minClusterSize = Mathf.Max(1, stageData.minClusterSize);
-        int maxClusterSize = Mathf.Max(minClusterSize, stageData.maxClusterSize);
-        int minEnemyIndex = Mathf.Clamp(stageData.minEnemyTypeIndex, 0, 2);
-        int maxEnemyIndex = Mathf.Clamp(stageData.maxEnemyTypeIndex, minEnemyIndex, 2);
+        int minClusterSize = Mathf.Max(1, stageConfig.minClusterSize);
+        int maxClusterSize = Mathf.Max(minClusterSize, stageConfig.maxClusterSize);
+        int minEnemyIndex = Mathf.Clamp(stageConfig.minEnemyTypeIndex, 0, 2);
+        int maxEnemyIndex = Mathf.Clamp(stageConfig.maxEnemyTypeIndex, minEnemyIndex, 2);
         int clusterSize = Random.Range(minClusterSize, maxClusterSize + 1);
         int spawnAnchorIndex = GetRegularSpawnIndex();
         Vector3 anchorPosition = MonsterRespawnPos[spawnAnchorIndex].position;
@@ -214,8 +255,8 @@ public class LevelManager : MonoBehaviour
         for (int i = 0; i < clusterSize; i++)
         {
             int enemyTypeIndex = Random.Range(minEnemyIndex, maxEnemyIndex + 1);
-            Vector3 spawnPosition = GetClusterSpawnPosition(anchorPosition, stageData.clusterScatterRadius);
-            SpawnEnemy(enemyTypeStr[enemyTypeIndex], spawnPosition, clusterId, stageData.monsterStageScaling);
+            Vector3 spawnPosition = GetClusterSpawnPosition(anchorPosition, stageConfig.clusterScatterRadius);
+            SpawnEnemy(enemyTypeStr[enemyTypeIndex], spawnPosition, clusterId, stageConfig.monsterStageScaling);
         }
     }
 
@@ -225,9 +266,8 @@ public class LevelManager : MonoBehaviour
             return;
 
         int bossSpawnIndex = MonsterRespawnPos.Length > 1 ? MonsterRespawnPos.Length - 1 : 0;
-        StageLevelData stageData = GetCurrentStageData();
-        MonsterStageScaling scaling = stageData != null ? stageData.monsterStageScaling : new MonsterStageScaling();
-        SpawnEnemy(enemyTypeStr[3], MonsterRespawnPos[bossSpawnIndex].position, -1, scaling);
+        RuntimeStageConfig stageConfig = GetCurrentStageConfig();
+        SpawnEnemy(enemyTypeStr[3], MonsterRespawnPos[bossSpawnIndex].position, -1, stageConfig.monsterStageScaling);
         bossSpawned = true;
     }
 
