@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -14,10 +14,12 @@ public class Player : MonoBehaviour
     public Transform[] chasePos;
 
     [Header("=======HP=======")]
+    [SerializeField] PlayerStatData playerData;
     public int health;
     public int maxHealth;
     public GameObject hpBarPrefab;
     Canvas hpCanvas;
+    HpBar hpBar;
     public Vector3 hpBarOffSet = new Vector3(0f, 2.2f, 0f);
 
     [Header("=======Move=======")]
@@ -54,6 +56,7 @@ public class Player : MonoBehaviour
     Vector3 lookVec;
     Vector3 lookDestVec;
     Vector3 destVec;
+    Transform currentTarget;
 
     [Header("=======Weapon=======")]
     public GameObject[] weapons;
@@ -67,10 +70,14 @@ public class Player : MonoBehaviour
     [Header("=======Grenades=======")]
     [SerializeField] GameObject[] Grenade_Prefab;
 
+    readonly Collider[] targetBuffer = new Collider[32];
+    float targetRefreshTimer;
+    const float TargetRefreshInterval = 0.12f;
     int atkCnt = 0;
 
-    private void Start()
+    void Start()
     {
+        ApplyPlayerData();
         ResetEquipWeapon();
         playerMesh = GetComponentsInChildren<SkinnedMeshRenderer>();
         joyStick = GameObject.Find("JoystickTouchArea").GetComponent<Joystick>();
@@ -78,16 +85,29 @@ public class Player : MonoBehaviour
         SetHPBar();
     }
 
+
+    void ApplyPlayerData()
+    {
+        if (playerData == null)
+            return;
+
+        maxHealth = playerData.maxHealth;
+        health = Mathf.Clamp(health <= 0 ? maxHealth : health, 1, maxHealth);
+        speed = playerData.moveSpeed;
+        defaultSpeed = speed;
+        survivalSkillCooldown = playerData.survivalSkillCooldown;
+        survivalSkillDuration = playerData.survivalSkillDuration;
+        survivalSkillSpeedMultiplier = playerData.survivalSkillSpeedMultiplier;
+        survivalSkillDamageReduction = playerData.survivalSkillDamageReduction;
+        survivalSkillHealAmount = playerData.survivalSkillHealAmount;
+    }
     void Update()
     {
         if (isDead)
             return;
 
         UpdateSurvivalSkillState();
-
-        miniMapTop.transform.position = new Vector3(transform.position.x, miniMapTop.transform.position.y, transform.position.z);
-        miniMapTop.transform.rotation = Quaternion.Euler(90, 0, 0);
-
+        UpdateMiniMapMarker();
         GetInput();
         MovePlayer();
         ChangePlayerFocus();
@@ -104,6 +124,16 @@ public class Player : MonoBehaviour
         StopToWall();
     }
 
+    void UpdateMiniMapMarker()
+    {
+        if (miniMapTop == null)
+            return;
+
+        Transform markerTransform = miniMapTop.transform;
+        markerTransform.position = new Vector3(transform.position.x, markerTransform.position.y, transform.position.z);
+        markerTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
+    }
+
     void FreezeRotation()
     {
         rigid.angularVelocity = Vector3.zero;
@@ -117,7 +147,7 @@ public class Player : MonoBehaviour
 
     public void Attack()
     {
-        if (nowEquipWeapon == null)
+        if (nowEquipWeapon == null || currentTarget == null)
             return;
 
         if (GameManager.instance.RetRemainEnemyCnt() <= 0 || !isExistTarget)
@@ -126,35 +156,30 @@ public class Player : MonoBehaviour
         fireDelay += Time.deltaTime;
         isFireReady = nowEquipWeapon.weaponSetInfo.rate < fireDelay;
 
-        if (isFireReady && !isJump && !isSwap && !isThrow)
+        if (!isFireReady || isJump || isSwap || isThrow)
+            return;
+
+        nowEquipWeapon.UseWeapon(bulletPos[0]);
+        if (nowEquipWeapon.weaponSetInfo.attackType == AttackType.Melee)
         {
-            nowEquipWeapon.UseWeapon(bulletPos[0]);
-            if (nowEquipWeapon.weaponSetInfo.attackType == AttackType.Melee)
+            if (atkCnt % 3 == 2)
             {
-                if (atkCnt % 3 == 2)
-                {
-                    anim.SetFloat("SwingId", 1);
-                    atkCnt = 0;
-                }
-                else
-                {
-                    anim.SetFloat("SwingId", 0);
-                    atkCnt++;
-                }
-                anim.SetTrigger("doSwing");
+                anim.SetFloat("SwingId", 1);
+                atkCnt = 0;
             }
             else
             {
-                atkCnt = 0;
-                anim.SetTrigger("doShot");
+                anim.SetFloat("SwingId", 0);
+                atkCnt++;
             }
-
-            ResetAttackDealy();
+            anim.SetTrigger("doSwing");
         }
-    }
+        else
+        {
+            atkCnt = 0;
+            anim.SetTrigger("doShot");
+        }
 
-    void ResetAttackDealy()
-    {
         fireDelay = 0f;
     }
 
@@ -194,36 +219,76 @@ public class Player : MonoBehaviour
         if (moveVec != Vector3.zero)
             transform.LookAt(lookVec);
 
+        if (nowEquipWeapon == null)
+        {
+            currentTarget = null;
+            isExistTarget = false;
+            return;
+        }
+
+        targetRefreshTimer -= Time.deltaTime;
+        if (targetRefreshTimer > 0f && currentTarget != null)
+        {
+            FaceCurrentTarget();
+            return;
+        }
+
+        targetRefreshTimer = TargetRefreshInterval;
         detectRadius = nowEquipWeapon.weaponSetInfo.detectRadius;
-        Collider[] targets = Physics.OverlapSphere(transform.position, detectRadius, LayerMask.GetMask("Enemy"));
+        int targetCount = Physics.OverlapSphereNonAlloc(transform.position, detectRadius, targetBuffer, LayerMask.GetMask("Enemy"));
 
         destVec = Vector3.zero;
-        float dist = -1f;
+        float nearestDistance = float.MaxValue;
+        currentTarget = null;
 
-        if (GameManager.instance.RetRemainEnemyCnt() <= 0 || targets.Length <= 0)
+        if (GameManager.instance.RetRemainEnemyCnt() <= 0 || targetCount <= 0)
         {
             isExistTarget = false;
             return;
         }
 
-        isExistTarget = true;
-        for (int i = 0; i < targets.Length; i++)
+        for (int i = 0; i < targetCount; i++)
         {
-            Transform targetTf = targets[i].transform;
-            Vector3 targetDist = targetTf.position - transform.position;
-            float len = targetDist.sqrMagnitude;
+            Collider candidate = targetBuffer[i];
+            if (candidate == null || !candidate.gameObject.activeInHierarchy)
+                continue;
 
-            if (dist == -1f || dist >= len)
-            {
-                dist = len;
-                destVec = targetDist;
-            }
+            Vector3 targetDist = candidate.transform.position - transform.position;
+            float sqrDistance = targetDist.sqrMagnitude;
+            if (sqrDistance >= nearestDistance)
+                continue;
+
+            nearestDistance = sqrDistance;
+            destVec = targetDist;
+            currentTarget = candidate.transform;
+        }
+
+        isExistTarget = currentTarget != null;
+        if (isExistTarget)
+            FaceCurrentTarget();
+    }
+
+    void FaceCurrentTarget()
+    {
+        if (currentTarget == null)
+        {
+            isExistTarget = false;
+            return;
+        }
+
+        destVec = currentTarget.position - transform.position;
+        if (destVec.sqrMagnitude > detectRadius * detectRadius)
+        {
+            currentTarget = null;
+            isExistTarget = false;
+            return;
         }
 
         transform.LookAt(transform.position + destVec);
         lookVec = transform.position + destVec;
-        destVec = destVec.normalized;
-        lookDestVec = new Vector3(destVec.x, 0f, destVec.z);
+        Vector3 normalizedDirection = destVec.normalized;
+        lookDestVec = new Vector3(normalizedDirection.x, 0f, normalizedDirection.z);
+        isExistTarget = true;
     }
 
     void ResetEquipWeapon()
@@ -244,6 +309,8 @@ public class Player : MonoBehaviour
         equipType = (WeaponType)num;
         weapons[num].SetActive(true);
         nowEquipWeapon = weapons[num].GetComponent<Weapon>();
+        currentTarget = null;
+        targetRefreshTimer = 0f;
 
         if (!flag)
         {
@@ -307,13 +374,13 @@ public class Player : MonoBehaviour
         isThrow = false;
     }
 
-    private void OnCollisionEnter(Collision collision)
+    void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Floor"))
             Invoke(nameof(ResetJump), 0.2f);
     }
 
-    private void OnTriggerEnter(Collider other)
+    void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Weapon"))
         {
@@ -345,7 +412,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void OnTriggerExit(Collider other)
+    void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Weapon"))
             NearObj = null;
@@ -356,10 +423,10 @@ public class Player : MonoBehaviour
         hpCanvas = GameObject.Find("Canvas_HP").GetComponent<Canvas>();
         hpBarPrefab = Instantiate(hpBarPrefab, hpCanvas.transform);
         hpBarPrefab.SetActive(true);
-        HpBar hpbarScript = hpBarPrefab.GetComponent<HpBar>();
-        hpbarScript.targetTr = gameObject.transform;
-        hpbarScript.offset = hpBarOffSet;
-        hpbarScript.setHpBar = true;
+        hpBar = hpBarPrefab.GetComponent<HpBar>();
+        hpBar.targetTr = gameObject.transform;
+        hpBar.offset = hpBarOffSet;
+        hpBar.setHpBar = true;
     }
 
     public void ToggleHpBar()
@@ -379,7 +446,8 @@ public class Player : MonoBehaviour
             ? Mathf.Max(1, Mathf.CeilToInt(damage * (1f - survivalSkillDamageReduction)))
             : damage;
         health -= finalDamage;
-        hpBarPrefab.GetComponent<HpBar>().UpdateHp(health, maxHealth);
+        if (hpBar != null)
+            hpBar.UpdateHp(health, maxHealth);
 
         if (health <= 0)
         {
@@ -446,7 +514,8 @@ public class Player : MonoBehaviour
         survivalSkillCooldownTimer = survivalSkillCooldown;
         speed = defaultSpeed * survivalSkillSpeedMultiplier;
         health = Mathf.Min(maxHealth, health + survivalSkillHealAmount);
-        hpBarPrefab.GetComponent<HpBar>().UpdateHp(health, maxHealth);
+        if (hpBar != null)
+            hpBar.UpdateHp(health, maxHealth);
         RefreshSkillTint();
     }
 
@@ -476,6 +545,30 @@ public class Player : MonoBehaviour
         return "Survival Skill : " + Mathf.CeilToInt(GetSurvivalSkillCooldownRemaining()) + "s";
     }
 
+
+    public void ApplyMaxHealthUpgrade(int value)
+    {
+        maxHealth += Mathf.Max(1, value);
+        health = Mathf.Min(maxHealth, health + value);
+        if (hpBar != null)
+            hpBar.UpdateHp(health, maxHealth);
+    }
+
+    public void ApplyMoveSpeedUpgrade(float value)
+    {
+        float increase = Mathf.Max(0f, value);
+        speed += increase;
+        defaultSpeed += increase;
+        if (isSurvivalSkillActive)
+            speed = defaultSpeed * survivalSkillSpeedMultiplier;
+    }
+
+    public void RestoreHealth(int value)
+    {
+        health = Mathf.Min(maxHealth, health + Mathf.Max(0, value));
+        if (hpBar != null)
+            hpBar.UpdateHp(health, maxHealth);
+    }
     void ResetJump()
     {
         isJump = false;
@@ -503,3 +596,4 @@ public class Player : MonoBehaviour
         }
     }
 }
+

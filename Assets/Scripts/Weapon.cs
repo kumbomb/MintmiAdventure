@@ -1,17 +1,42 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
 public class Weapon : EquipWeapon
 {
+    [SerializeField] WeaponStatData weaponData;
     public WeaponSetInfo weaponSetInfo;
     public int maxAmmo = 0;
     public int currentAmmo = 0;
 
-    public void OnEnable()
+    WaitForSeconds swingWindup;
+    WaitForSeconds swingActive;
+    WaitForSeconds swingRecover;
+    float bulletSpeed = 100f;
+
+    void Awake()
     {
-        if (weaponSetInfo.attackType == AttackType.Melee)
+        ApplyWeaponData();
+    }
+
+    void OnEnable()
+    {
+        ApplyWeaponData();
+        if (weaponSetInfo.attackType == AttackType.Melee && weaponSetInfo.meleeArea != null)
             weaponSetInfo.meleeArea.enabled = false;
+    }
+
+    void ApplyWeaponData()
+    {
+        if (weaponData != null)
+            weaponData.ApplyTo(ref weaponSetInfo);
+
+        float windup = weaponData != null ? weaponData.swingWindup : 0.2f;
+        float active = weaponData != null ? weaponData.swingActive : 0.1f;
+        float recover = weaponData != null ? weaponData.swingRecover : 0.3f;
+        bulletSpeed = weaponData != null ? weaponData.bulletSpeed : 100f;
+        swingWindup = new WaitForSeconds(windup);
+        swingActive = new WaitForSeconds(active);
+        swingRecover = new WaitForSeconds(recover);
     }
 
     public void UseWeapon(Transform position = null)
@@ -22,45 +47,49 @@ public class Weapon : EquipWeapon
             return;
         }
 
-        if (weaponSetInfo.attackType == AttackType.Range)
+        if (weaponSetInfo.attackType != AttackType.Range || position == null)
+            return;
+
+        switch (weaponSetInfo.weaponType)
         {
-            switch (weaponSetInfo.weaponType)
-            {
-                case WeaponType.HandGun:
-                case WeaponType.SubMachineGun:
-                case WeaponType.HandShotGun:
-                case WeaponType.Shotgun:
-                    StartCoroutine(Co_Shot(position));
-                    break;
-            }
+            case WeaponType.HandGun:
+            case WeaponType.SubMachineGun:
+            case WeaponType.HandShotGun:
+            case WeaponType.Shotgun:
+                FireBullet(position);
+                break;
         }
     }
-    
+
     IEnumerator Co_Swing()
     {
-        yield return new WaitForSeconds(0.2f);
-        weaponSetInfo.meleeArea.enabled = true;
-        weaponSetInfo.trailEffect.enabled = true;
+        yield return swingWindup;
+        if (weaponSetInfo.meleeArea != null)
+            weaponSetInfo.meleeArea.enabled = true;
+        if (weaponSetInfo.trailEffect != null)
+            weaponSetInfo.trailEffect.enabled = true;
 
-        yield return new WaitForSeconds(0.1f);
-        weaponSetInfo.meleeArea.enabled = false;
+        yield return swingActive;
+        if (weaponSetInfo.meleeArea != null)
+            weaponSetInfo.meleeArea.enabled = false;
 
-        yield return new WaitForSeconds(0.3f);
-        weaponSetInfo.trailEffect.enabled = false;
+        yield return swingRecover;
+        if (weaponSetInfo.trailEffect != null)
+            weaponSetInfo.trailEffect.enabled = false;
     }
 
-    IEnumerator Co_Shot(Transform bulletTransform)
+    void FireBullet(Transform bulletTransform)
     {
         GameObject bulletObj = ObjectPool.instance.PopFromPool(weaponSetInfo.weaponType.ToString(), ObjectPool.instance.PlayerBulletPool);
         bulletObj.transform.position = bulletTransform.position;
         bulletObj.transform.rotation = bulletTransform.rotation;
-        bulletObj.GetComponent<Bullet>().damage = (int)Random.Range(weaponSetInfo.minDamage, weaponSetInfo.MaxDamage);
+        Bullet bullet = bulletObj.GetComponent<Bullet>();
+        bullet.damage = Random.Range(weaponSetInfo.minDamage, weaponSetInfo.MaxDamage);
         bulletObj.SetActive(true);
         Rigidbody bulletRig = bulletObj.GetComponent<Rigidbody>();
-        bulletRig.linearVelocity = bulletTransform.forward * 100f;
-        yield return null;
+        bulletRig.linearVelocity = bulletTransform.forward * bulletSpeed;
     }
-    
+
     public override ItemBehaviour ItemBehaviourID
     {
         get

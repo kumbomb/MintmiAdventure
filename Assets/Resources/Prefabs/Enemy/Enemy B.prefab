@@ -263,6 +263,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 993a767cc9846414ca10b6397dd997f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  monsterData: {fileID: 11400000, guid: 83d30418e12f4d1bb133dfae74987b52, type: 2}
   enemyType: 1
   curHealth: 100
   maxHealth: 100
@@ -409,3 +410,4 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 98a47f1cd28823f4b8ab7f52d3d506fb, type: 3}
   m_PrefabInstance: {fileID: 3921667478629057626}
   m_PrefabAsset: {fileID: 0}
+

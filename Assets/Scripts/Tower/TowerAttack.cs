@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,16 +10,68 @@ public class TowerAttack : MonoBehaviour
     [SerializeField] float dist;
     [SerializeField] float intervalTime;
 
-    private void Start()
+    readonly List<Enemy> targets = new List<Enemy>();
+    float tickTimer;
+
+    void Start()
     {
-        attackRange.radius = dist;
+        if (attackRange != null)
+            attackRange.radius = dist;
+        tickTimer = intervalTime;
     }
 
-    private void OnTriggerStay(Collider other)
+    void OnEnable()
     {
-        if(other.gameObject.CompareTag("Enemy"))
+        tickTimer = intervalTime;
+        targets.Clear();
+    }
+
+    void Update()
+    {
+        if (targets.Count == 0)
+            return;
+
+        tickTimer -= Time.deltaTime;
+        if (tickTimer > 0f)
+            return;
+
+        tickTimer = intervalTime;
+        for (int i = targets.Count - 1; i >= 0; i--)
         {
-            other.gameObject.GetComponent<Enemy>().OnDamagedFromTower(thisBuffType, damage, intervalTime);
+            Enemy enemy = targets[i];
+            if (enemy == null || !enemy.gameObject.activeInHierarchy)
+            {
+                targets.RemoveAt(i);
+                continue;
+            }
+
+            enemy.OnDamagedFromTower(thisBuffType, damage, intervalTime);
         }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (!other.CompareTag("Enemy"))
+            return;
+
+        Enemy enemy = other.GetComponent<Enemy>();
+        if (enemy == null || targets.Contains(enemy))
+            return;
+
+        targets.Add(enemy);
+        enemy.OnDamagedFromTower(thisBuffType, damage, intervalTime);
+        tickTimer = intervalTime;
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (!other.CompareTag("Enemy"))
+            return;
+
+        Enemy enemy = other.GetComponent<Enemy>();
+        if (enemy == null)
+            return;
+
+        targets.Remove(enemy);
     }
 }

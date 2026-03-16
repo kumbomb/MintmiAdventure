@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba0eef8f31628794f88850c5103550db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponData: {fileID: 11400000, guid: f4e512db8a4440a0a19785b6df9c7cd2, type: 2}
   itemName: HG
   itemBehaviourID: 1
   weaponSetInfo:
@@ -141,3 +142,4 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+

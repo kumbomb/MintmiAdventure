@@ -1,32 +1,26 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 
 public class SubPlayer : SubPlayerParent
 {
     [SerializeField] Transform[] bulletPos;
     public BehaviourSetting behaviourSetting;
     public ItemHolder itemHolder;
-    [SerializeField] float checkDist = 0f;   
+    [SerializeField] float checkDist = 0f;
+    [SerializeField] float followStopDistance = 1.2f;
+    [SerializeField] float followResumeDistance = 2.4f;
+    [SerializeField] bool reverseFacing = true;
 
     private float AniSpeed
     {
-        get
-        {
-            return anim.GetFloat("Speed");
-        }
-        set
-        {
-            anim.SetFloat("Speed", value);
-        }
+        get => anim.GetFloat("Speed");
+        set => anim.SetFloat("Speed", value);
     }
+
     private int AniWeaponBehaviourID
     {
-        get
-        {
-            return behaviourSetting.HasHand ? (int)anim.GetFloat("AttackID") : 1;
-        }
+        get => behaviourSetting.HasHand ? (int)anim.GetFloat("AttackID") : 1;
         set
         {
             anim.SetFloat("AttackID", value);
@@ -35,48 +29,28 @@ public class SubPlayer : SubPlayerParent
                 value <= 2 ? 1 :
                 value <= 5 ? 2 :
                 value <= 7 ? 3 :
-            4);
+                4);
         }
     }
+
     private bool AniOnGround
     {
-        get
-        {
-            return anim.GetBool("OnGround");
-        }
-        set
-        {
-            anim.SetBool("OnGround", value);
-        }
+        get => anim.GetBool("OnGround");
+        set => anim.SetBool("OnGround", value);
     }
-    public bool Attacking
-    {
-        get
-        {
-            return AniAttack1 || AniAttack2;
-        }
-    }
+
+    public bool Attacking => AniAttack1 || AniAttack2;
+
     private bool AniAttack1
     {
-        get
-        {
-            return anim.GetBool("Attack1");
-        }
-        set
-        {
-            anim.SetBool("Attack1", value);
-        }
+        get => anim.GetBool("Attack1");
+        set => anim.SetBool("Attack1", value);
     }
+
     private bool AniAttack2
     {
-        get
-        {
-            return anim.GetBool("Attack2");
-        }
-        set
-        {
-            anim.SetBool("Attack2", value);
-        }
+        get => anim.GetBool("Attack2");
+        set => anim.SetBool("Attack2", value);
     }
 
     int atkCnt = 0;
@@ -93,17 +67,24 @@ public class SubPlayer : SubPlayerParent
         atkCnt = 0;
         AniWeaponBehaviourID = (int)nowEquipWeapon.RetItemBehaviour();
         chasingTarget = GameManager.instance.playerScript.chasePos[supporterNum].transform;
+        if (nav != null)
+        {
+            nav.stoppingDistance = followStopDistance;
+            nav.updateRotation = true;
+        }
     }
 
     void Update()
     {
         if (GameManager.instance.playerScript != null && GameManager.instance.playerScript.isDead)
             return;
+
         miniMapTop.transform.position = new Vector3(transform.position.x, miniMapTop.transform.position.y, transform.position.z);
         miniMapTop.transform.rotation = Quaternion.Euler(90, 0, 0);
-            
-        CheckDistfromPlayer();
+
         FindingEnemy();
+        CheckDistfromPlayer();
+        SyncMoveAnimation();
         Attack();
     }
 
@@ -114,79 +95,95 @@ public class SubPlayer : SubPlayerParent
         FreezeRotation();
         StopToWall();
     }
-    
+
+    void SyncMoveAnimation()
+    {
+        if (nav == null)
+            return;
+
+        bool isMoving = nav.enabled && !nav.isStopped && nav.velocity.sqrMagnitude > 0.04f;
+        AniSpeed = isMoving ? 1f : 0f;
+        if (isMoving)
+            FaceDirection(nav.desiredVelocity);
+    }
+
     public void CheckDistfromPlayer()
     {
-        //1. 플레이어와 서포터의 거리 측정
-        var headingToPlayerDist = Vector3.Distance(transform.position, GameManager.instance.nowPlayerCharacter.transform.position);
-        var headingToPlayerVec = transform.position - GameManager.instance.nowPlayerCharacter.transform.position;
+        if (GameManager.instance.nowPlayerCharacter == null || chasingTarget == null || nav == null)
+            return;
 
-        //플레이어랑 서포터의 거리 <-> max거리 
-        if(headingToPlayerDist < checkDist)
-        {
-            //범위내 플레이어가 있으면 추적하지 않는다 
-            //공격 사정거리에 들어가는지 
-            if (atkTarget != null && !atkTarget.GetComponent<Enemy>().isDead)
-            {
-                var headingToEnemyDist = Vector3.Distance(transform.position, atkTarget.transform.position);
-                var headingToEnemyVec = transform.position - atkTarget.transform.position;
+        float distToPlayer = Vector3.Distance(transform.position, GameManager.instance.nowPlayerCharacter.transform.position);
+        bool canFight = distToPlayer < checkDist;
+        bool hasTarget = atkTarget != null && atkTarget.activeInHierarchy;
+        Enemy targetEnemy = hasTarget ? atkTarget.GetComponent<Enemy>() : null;
+        hasTarget = hasTarget && targetEnemy != null && !targetEnemy.isDead;
 
-                Quaternion rot = Quaternion.LookRotation(headingToEnemyVec.normalized);
-                transform.rotation = rot;
-                //공격 사정거리에 들어왔으면
-                if (headingToEnemyDist < nowEquipWeapon.weaponSetInfo.atkRadius)
-                {
-                    ToggleChaseState(false);
-                    rigid.linearVelocity = Vector3.zero;                    
-                }
-                //공격 사정거리에 들어오지 않았으면 
-                //추적
-                else
-                {
-                    ToggleChaseState(true);
-                    nav.SetDestination(atkTarget.transform.position);
-                }
-            }
-            else
-            {
-                ToggleChaseState(false);
-                Quaternion rot = Quaternion.LookRotation(headingToPlayerVec.normalized);
-                transform.rotation = rot;
-                rigid.linearVelocity = Vector3.zero;
-            }
-        }
-        else
+        if (!canFight)
         {
-            //범위내 플레이어가 없으면 플레이어 위치를 따라간다
-            ToggleChaseState(true);
             atkTarget = null;
-            Quaternion rot = Quaternion.LookRotation(headingToPlayerVec.normalized);
-            transform.rotation = rot;
-            nav.SetDestination(chasingTarget.position);
+            isExistTarget = false;
+            MoveTo(chasingTarget.position, followStopDistance);
+            return;
         }
 
-    }
-
-    void ToggleChaseState(bool flag)
-    {
-        isChasing = flag;
-        nav.isStopped = !isChasing;
-        AniSpeed = isChasing ? 1f : 0f;
-    }
-
-    void ChangeFocus()
-    {
-        if (isChasing)
-            viewVector = (transform.position - chasingTarget.position).normalized;
-        else
+        if (hasTarget)
         {
-            if (isExistTarget && atkTarget != null)
-                viewVector = (transform.position - atkTarget.transform.position).normalized;
-            else
-                viewVector = (transform.position - chasingTarget.position).normalized;
+            float distToEnemy = Vector3.Distance(transform.position, atkTarget.transform.position);
+            float attackStopDistance = Mathf.Max(0.8f, nowEquipWeapon.weaponSetInfo.atkRadius * 0.85f);
+            FaceDirection(atkTarget.transform.position - transform.position);
+
+            if (distToEnemy <= nowEquipWeapon.weaponSetInfo.atkRadius)
+            {
+                StopChasing();
+                return;
+            }
+
+            MoveTo(atkTarget.transform.position, attackStopDistance);
+            return;
         }
-        Quaternion rot = Quaternion.LookRotation(viewVector);
-        transform.rotation = rot;
+
+        float distToAnchor = Vector3.Distance(transform.position, chasingTarget.position);
+        if (distToAnchor > followResumeDistance)
+        {
+            MoveTo(chasingTarget.position, followStopDistance);
+            return;
+        }
+
+        StopChasing();
+        if (GameManager.instance.nowPlayerCharacter != null)
+            FaceDirection(GameManager.instance.nowPlayerCharacter.transform.forward);
+    }
+
+    void MoveTo(Vector3 destination, float stopDistance)
+    {
+        if (nav == null)
+            return;
+
+        isChasing = true;
+        nav.isStopped = false;
+        nav.stoppingDistance = stopDistance;
+        nav.SetDestination(destination);
+    }
+
+    void StopChasing()
+    {
+        isChasing = false;
+        if (nav == null)
+            return;
+
+        nav.isStopped = true;
+        nav.ResetPath();
+        rigid.linearVelocity = Vector3.zero;
+    }
+
+    void FaceDirection(Vector3 direction)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= 0.001f)
+            return;
+
+        Vector3 lookDirection = reverseFacing ? -direction.normalized : direction.normalized;
+        transform.rotation = Quaternion.LookRotation(lookDirection);
     }
 
     public override void Attack()
@@ -201,9 +198,9 @@ public class SubPlayer : SubPlayerParent
         }
 
         var headingToEnemyDist = Vector3.Distance(transform.position, atkTarget.transform.position);
-        var headingToEnemyVec = transform.position - atkTarget.transform.position;
+        var headingToEnemyVec = atkTarget.transform.position - transform.position;
 
-        if(headingToEnemyDist > nowEquipWeapon.weaponSetInfo.atkRadius)
+        if (headingToEnemyDist > nowEquipWeapon.weaponSetInfo.atkRadius)
         {
             atkCnt = 0;
             anim.SetBool("Attack1", false);
@@ -212,24 +209,22 @@ public class SubPlayer : SubPlayerParent
             return;
         }
 
-        Quaternion rot = Quaternion.LookRotation(headingToEnemyVec.normalized);
-        transform.rotation = rot;
+        FaceDirection(headingToEnemyVec);
 
         fireDelay += Time.deltaTime;
-
         isFireReady = nowEquipWeapon.weaponSetInfo.rate < fireDelay;
 
         if (isFireReady)
         {
-            if(atkCnt % 3 == 2)
+            if (atkCnt % 3 == 2)
             {
-                if(nowEquipWeapon.weaponSetInfo.attackType == AttackType.Range)
+                if (nowEquipWeapon.weaponSetInfo.attackType == AttackType.Range)
                     nowEquipWeapon.UseWeapon(bulletPos[1]);
                 else
                     nowEquipWeapon.UseWeapon();
 
-                anim.SetBool("Attack1",false);
-                anim.SetBool("Attack2",true);
+                anim.SetBool("Attack1", false);
+                anim.SetBool("Attack2", true);
                 atkCnt = 0;
             }
             else
@@ -242,7 +237,7 @@ public class SubPlayer : SubPlayerParent
                 anim.SetBool("Attack2", false);
                 anim.SetBool("Attack1", true);
                 atkCnt++;
-            }           
+            }
 
             ResetAttackDealy();
         }
@@ -251,45 +246,50 @@ public class SubPlayer : SubPlayerParent
 
     public override void FindingEnemy()
     {
-        if (isChasing || (atkTarget != null && !atkTarget.GetComponent<Enemy>().isDead))
-            return;
+        if (atkTarget != null)
+        {
+            Enemy currentEnemy = atkTarget.GetComponent<Enemy>();
+            if (currentEnemy != null && !currentEnemy.isDead)
+            {
+                isExistTarget = true;
+                return;
+            }
+        }
 
         detectRadius = nowEquipWeapon.weaponSetInfo.detectRadius;
-        Collider[] _target = Physics.OverlapSphere(transform.position, detectRadius, LayerMask.GetMask("Enemy"));
+        Collider[] targets = Physics.OverlapSphere(transform.position, detectRadius, LayerMask.GetMask("Enemy"));
 
-        if (GameManager.instance.RetRemainEnemyCnt() <= 0 || _target.Length <= 0)
+        if (GameManager.instance.RetRemainEnemyCnt() <= 0 || targets.Length <= 0)
         {
             isExistTarget = false;
             atkTarget = null;
             viewVector = transform.position;
-            dist = -1;
+            dist = -1f;
             return;
         }
-        isExistTarget = true;
-        if(atkTarget != null && atkTarget.GetComponent<Enemy>().isDead)
-        {
-            atkTarget = null;
-            viewVector = transform.position;
-            dist = -1;
-        }
-        int ii = 0;
-        for (int i = 0; i < _target.Length; i++)
-        {
-            Vector3 _dist = transform.position - _target[i].transform.position;
-            float len = _dist.sqrMagnitude;
 
-            if (dist == -1 || dist >= len)
-            {
-                dist = len;
-                viewVector = _dist;
-                atkTarget = _target[i].gameObject;
-                ii = i;
-            }
+        isExistTarget = true;
+        atkTarget = null;
+        dist = -1f;
+
+        for (int i = 0; i < targets.Length; i++)
+        {
+            Enemy enemy = targets[i].GetComponent<Enemy>();
+            if (enemy == null || enemy.isDead)
+                continue;
+
+            Vector3 targetDelta = targets[i].transform.position - transform.position;
+            float len = targetDelta.sqrMagnitude;
+            if (dist >= 0f && dist < len)
+                continue;
+
+            dist = len;
+            viewVector = targetDelta;
+            atkTarget = targets[i].gameObject;
         }
-        moveVector = viewVector.normalized;
-        ToggleChaseState(true);
-        Quaternion rot = Quaternion.LookRotation(moveVector);
-        transform.rotation = rot;
+
+        if (atkTarget == null)
+            isExistTarget = false;
 
         base.FindingEnemy();
     }
@@ -302,7 +302,7 @@ public class SubPlayer : SubPlayerParent
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.CompareTag("EnemyBullet"))
+        if (other.CompareTag("EnemyBullet"))
         {
             if (other.GetComponent<Rigidbody>() != null)
                 other.gameObject.SetActive(false);
@@ -357,9 +357,4 @@ public class SubPlayer : SubPlayerParent
         }
     }
 }
-
-
-
-
-
 

@@ -184,6 +184,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba0eef8f31628794f88850c5103550db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponData: {fileID: 11400000, guid: 57921c7ea3864b48b0b3bd80a39e0b39, type: 2}
   itemName: Hammer
   itemBehaviourID: 1
   weaponSetInfo:
@@ -294,3 +295,4 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+

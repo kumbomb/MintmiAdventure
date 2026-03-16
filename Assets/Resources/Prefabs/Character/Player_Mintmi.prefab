@@ -1152,6 +1152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db34ca79e2cf39341908d97503488dff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerData: {fileID: 11400000, guid: 50c41e22c3bc4802b5dbb4f37565952f, type: 2}
   anim: {fileID: 3826939784807282303}
   rigid: {fileID: 9119469128803538954}
   miniMapTop: {fileID: 4700217873739831999}
@@ -1773,3 +1774,4 @@ BoxCollider:
   m_CorrespondingSourceObject: {fileID: 3667868927713795130, guid: 09cacefe6beb0ad4bafef93b4da15aa2, type: 3}
   m_PrefabInstance: {fileID: 5505720365218835796}
   m_PrefabAsset: {fileID: 0}
+

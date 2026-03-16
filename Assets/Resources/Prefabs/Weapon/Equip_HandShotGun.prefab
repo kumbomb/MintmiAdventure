@@ -125,6 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba0eef8f31628794f88850c5103550db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponData: {fileID: 11400000, guid: d3c1f31987d74f5e8ce0f7be4052f6e1, type: 2}
   itemName: ShotGun
   itemBehaviourID: 1
   weaponSetInfo:
@@ -141,3 +142,4 @@ MonoBehaviour:
     bulletPos: {fileID: 0}
   maxAmmo: 20
   currentAmmo: 0
+

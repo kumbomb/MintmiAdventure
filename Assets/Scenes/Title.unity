@@ -690,11 +690,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   surface: {fileID: 0}
-  levelInfoList:
-  - stageNo: 0
-    waveMaxMonsterNum: 050000000a0000000f000000190000001e000000
-  - stageNo: 1
-    waveMaxMonsterNum: 0a0000000a0000000a0000000a00000014000000
+  stageDataList:
+  - {fileID: 11400000, guid: c37193ddf2b24fe4b88687fd2fd2fb44, type: 2}
+  - {fileID: 11400000, guid: 5441ab4fce7f4b7d8b1f3cb4e55f7470, type: 2}
   stagePos: {fileID: 0}
   MonsterRespawnPos: []
   NextStagePortal: {fileID: 0}
@@ -1034,3 +1032,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+
+
+
