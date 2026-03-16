@@ -54,10 +54,10 @@ public class DamageTextUI : MonoBehaviour
             Bind(targetCanvas);
 
         worldPosition = targetWorldPosition;
-        worldOffset = new Vector3(Random.Range(-0.2f, 0.2f), 0f, 0f);
-        lifetime = duration;
+        worldOffset = new Vector3(Random.Range(-0.08f, 0.08f), 0f, 0f);
+        lifetime = Mathf.Max(0.75f, duration);
         elapsed = 0f;
-        riseAmount = verticalRise;
+        riseAmount = Mathf.Max(1.35f, verticalRise);
         baseColor = color;
         textComponent.color = color;
         textComponent.text = damage.ToString();
@@ -86,7 +86,8 @@ public class DamageTextUI : MonoBehaviour
             return;
 
         float progress = Mathf.Clamp01(elapsed / lifetime);
-        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPosition + worldOffset + Vector3.up * (progress * riseAmount));
+        float riseProgress = 1f - Mathf.Pow(1f - progress, 2f);
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPosition + worldOffset + Vector3.up * (riseProgress * riseAmount));
         if (screenPos.z < 0f)
             screenPos.z *= -1f;
 
@@ -96,6 +97,6 @@ public class DamageTextUI : MonoBehaviour
         Color color = baseColor;
         color.a = 1f - progress;
         textComponent.color = color;
-        rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 1.15f, progress);
+        rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 1.08f, progress);
     }
 }

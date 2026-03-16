@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
@@ -35,9 +35,10 @@ public class Enemy : MonoBehaviour
     bool isSlow;
     bool isBurn;
     bool isAddictive;
+    int runtimeClusterId = -1;
     HpBar enemyHpBar;
 
-    private void Awake()
+    void Awake()
     {
         nav.enabled = false;
         matRenders = GetComponentsInChildren<MeshRenderer>();
@@ -45,17 +46,19 @@ public class Enemy : MonoBehaviour
             MeleeArea.enabled = false;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         if (enemyHpBar != null)
             enemyHpBar.gameObject.SetActive(false);
     }
-    
-    private void Update()
+
+    void Update()
     {
-        if(nav.enabled && enemyType != MonsterType.EnemyBoss)
+        UpdateMiniMapMarker();
+
+        if (nav.enabled && enemyType != MonsterType.EnemyBoss)
         {
-            if(GameManager.instance.nowGameResultState != GameResultState.None)
+            if (GameManager.instance.nowGameResultState != GameResultState.None)
             {
                 isChase = false;
                 anim.SetBool("isWalk", false);
@@ -65,12 +68,12 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
         Targeting();
         FreezeRotation();
     }
-    
+
     void FreezeRotation()
     {
         if (isChase)
@@ -78,6 +81,16 @@ public class Enemy : MonoBehaviour
             rigid.linearVelocity = Vector3.zero;
             rigid.angularVelocity = Vector3.zero;
         }
+    }
+
+    void UpdateMiniMapMarker()
+    {
+        if (miniMapTop == null)
+            return;
+
+        Transform markerTransform = miniMapTop.transform;
+        markerTransform.position = new Vector3(transform.position.x, markerTransform.position.y, transform.position.z);
+        markerTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
     }
 
     void Targeting()
@@ -103,7 +116,7 @@ public class Enemy : MonoBehaviour
                 targetRange = 20f;
                 break;
         }
-        
+
         RaycastHit[] rayHits = Physics.SphereCastAll(transform.position, targetRadius, transform.forward, targetRange, LayerMask.GetMask("Player"));
         if (rayHits.Length > 0 && !isAttack)
             StartCoroutine(Co_Attack());
@@ -118,7 +131,7 @@ public class Enemy : MonoBehaviour
         Vector3 dest = attackTarget.transform.position - transform.position;
         transform.LookAt(transform.position + dest * 3f);
         anim.SetBool("isAttack", true);
-        
+
         switch (enemyType)
         {
             case MonsterType.EnemyA:
@@ -167,6 +180,7 @@ public class Enemy : MonoBehaviour
         isBurn = false;
         isAddictive = false;
         isDead = false;
+        runtimeClusterId = -1;
         nav.enabled = true;
         OnDamageMaterial(Color.white);
         gameObject.layer = 13;
@@ -176,8 +190,14 @@ public class Enemy : MonoBehaviour
         miniMapTop.color = aliveColor;
         EnsureHpBar();
         UpdateHpBar();
-        enemyHpBar.gameObject.SetActive(true);
+        if (enemyHpBar != null)
+            enemyHpBar.gameObject.SetActive(true);
         ChaseStart();
+    }
+
+    public void SetSpawnContext(int clusterId)
+    {
+        runtimeClusterId = clusterId;
     }
 
     void EnsureHpBar()
@@ -219,8 +239,8 @@ public class Enemy : MonoBehaviour
             anim.SetBool("isWalk", true);
         }
     }
-    
-    private void OnTriggerEnter(Collider other)
+
+    void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Melee"))
         {
@@ -277,7 +297,7 @@ public class Enemy : MonoBehaviour
         nav.acceleration = defaultAccSpeed;
         nav.angularSpeed = defaultAngularSpeed;
     }
-    
+
     void Burn(float value, float time)
     {
         StartCoroutine(OnBurnDamage(value, time));
@@ -317,7 +337,7 @@ public class Enemy : MonoBehaviour
         }
         isAddictive = false;
     }
-        
+
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade, int damage)
     {
         if (damage <= 0)
@@ -327,7 +347,7 @@ public class Enemy : MonoBehaviour
         OnDamageMaterial(Color.red);
         curHealth -= damage;
         UpdateHpBar();
-        DamageTextManager.ShowDamage(transform.position + hpBarOffset, damage, Color.white);
+        DamageTextManager.ShowDamage(transform.position + hpBarOffset, damage, new Color(1f, 0.25f, 0.25f));
 
         if (curHealth <= 0)
         {
@@ -337,9 +357,10 @@ public class Enemy : MonoBehaviour
 
             miniMapTop.color = deathColor;
             isDead = true;
+            GameManager.instance.RegisterEnemyKill(enemyType, runtimeClusterId);
+            runtimeClusterId = -1;
             OnDamageMaterial(Color.gray);
             gameObject.layer = 14;
-            GameManager.instance.UpdateGameState(true);
             nav.speed = defaultSpeed;
             nav.acceleration = defaultAccSpeed;
             nav.angularSpeed = defaultAngularSpeed;
@@ -417,7 +438,7 @@ public class Enemy : MonoBehaviour
         foreach (MeshRenderer mesh in matRenders)
             mesh.material.color = col;
     }
-    
+
     IEnumerator Co_Delay(float delayTime)
     {
         float nowTime = 0f;
@@ -428,3 +449,4 @@ public class Enemy : MonoBehaviour
         }
     }
 }
+

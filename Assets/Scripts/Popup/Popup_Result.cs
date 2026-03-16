@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
@@ -20,7 +20,7 @@ public class Popup_Result : MonoBehaviour
         callBack = ShowPopup;
     }
 
-    private void OnEnable()
+    void OnEnable()
     {
         callBack?.Invoke();
         if (callBack == null)
@@ -31,7 +31,7 @@ public class Popup_Result : MonoBehaviour
         }
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         callBack = null;
     }
@@ -54,7 +54,6 @@ public class Popup_Result : MonoBehaviour
                 DOVirtual.DelayedCall(2f, () =>
                 {
                     gameObject.SetActive(false);
-                    GameManager.instance.ToggleHpbar(false);
                 });
                 break;
 

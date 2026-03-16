@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
@@ -33,6 +32,7 @@ public class GameManager : MonoBehaviour
 
     [Header("=======Camera=======")]
     [SerializeField] GameObject cam_Follow;
+    [SerializeField] GameObject miniMapCam;
 
     [Header("=======Canvas=======")]
     [SerializeField] GameObject hpCanvas;
@@ -67,8 +67,7 @@ public class GameManager : MonoBehaviour
     public bool isPause = false;
 
     [SerializeField] float currentIntervalTime = 0f;
-    [SerializeField] int nowWave = 0;
-    [SerializeField] float maxIntervalTime = 5f;
+    [SerializeField] float maxIntervalTime = 1.5f;
 
     public int nowStageNum = 0;
     public int nowMonsterCnt = 0;
@@ -77,7 +76,7 @@ public class GameManager : MonoBehaviour
     public int nowGetCoin = 0;
     public int curPlayerWeaponNum = 0;
 
-    private void Awake()
+    void Awake()
     {
         if (instance != null && instance != this)
         {
@@ -103,64 +102,17 @@ public class GameManager : MonoBehaviour
         switch (nowGameState)
         {
             case GameState.BattleReady:
-                if (nowPlayerCharacter != null)
-                {
-                    if (isStartLevel || !isWaitStart)
-                        return;
-
-                    isStartLevel = true;
-                    if (cam_Follow != null)
-                        cam_Follow.SetActive(true);
-                    StartCoroutine(Co_StartLevel());
-                }
-                else
-                {
-                    levelManager.InitLevel();
-                    nowPlayerCharacter = Instantiate(playerPrefabList[0], Vector3.zero, Quaternion.identity);
-                    nowPlayerCharacter.transform.parent = playerParentPos;
-                    playerScript = nowPlayerCharacter.GetComponent<Player>();
-                    cam_Follow.GetComponent<FollowCamera>().SetTarget(nowPlayerCharacter.transform);
-                    playerScript.ChangeEquipWeapon(curPlayerWeaponNum, true);
-
-                    subPlayerCharacter.Clear();
-                    for (int i = 0; i < subPlayerIdxList.Count; i++)
-                    {
-                        subPlayerCharacter.Add(Instantiate(subPlayerObjList[subPlayerIdxList[i]], new Vector3(5f, 0f, 0f), Quaternion.identity));
-                        subPlayerCharacter[i].transform.parent = playerParentPos;
-                        subPlayerCharacter[i].GetComponent<SubPlayerParent>().supporterNum = i;
-                    }
-                }
+                HandleBattleReady();
                 break;
-
             case GameState.Ready:
-                if (!waveText.activeSelf)
-                    waveText.SetActive(true);
-
-                waveText.GetComponent<Text>().text = "Wait Next Wave\n" + (int)(maxIntervalTime - currentIntervalTime);
-                currentIntervalTime += Time.deltaTime;
-
-                if (currentIntervalTime >= maxIntervalTime)
-                {
-                    currentIntervalTime = 0f;
-                    nowGameState = GameState.BattleStart;
-                }
+                HandleStageIntro();
                 break;
-
             case GameState.BattleStart:
-                StartWave();
+                StartStage();
                 break;
-
             case GameState.Battle:
-                CheckWave();
-                break;
-
-            case GameState.BattleEnd:
-                if (startNextWave)
-                {
-                    currentIntervalTime = 0f;
-                    startNextWave = false;
-                    nowGameState = GameState.Ready;
-                }
+                levelManager?.TickStage();
+                CheckStageClear();
                 break;
         }
 
@@ -184,54 +136,89 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void StartWave()
+    void HandleBattleReady()
     {
-        if (nowWave < levelManager.levelInfoList[nowStageNum].waveMaxMonsterNum.Length)
+        if (nowPlayerCharacter != null)
         {
-            levelManager.SpawnMonster(nowWave);
-            nowWave++;
-            waveText.GetComponent<Text>().text = nowWave != levelManager.levelInfoList[nowStageNum].waveMaxMonsterNum.Length
-                ? "Wave " + nowWave + " Start"
-                : "Final Wave Start";
+            if (isStartLevel || !isWaitStart)
+                return;
 
-            currentWave.text = "Current Wave : " + nowWave + " / " + levelManager.levelInfoList[nowStageNum].waveMaxMonsterNum.Length;
-            waveText.SetActive(true);
+            isStartLevel = true;
+            if (cam_Follow != null)
+                cam_Follow.SetActive(true);
+            StartCoroutine(Co_StartLevel());
+            return;
         }
 
-        nowGameState = GameState.Battle;
-        Invoke(nameof(DelayHideText), 1.5f);
+        levelManager?.InitLevel();
+        nowPlayerCharacter = Instantiate(playerPrefabList[0], Vector3.zero, Quaternion.identity);
+        nowPlayerCharacter.transform.parent = playerParentPos;
+        playerScript = nowPlayerCharacter.GetComponent<Player>();
+        cam_Follow.GetComponent<FollowCamera>().SetTarget(nowPlayerCharacter.transform);
+        playerScript.ChangeEquipWeapon(curPlayerWeaponNum, true);
+
+        subPlayerCharacter.Clear();
+        for (int i = 0; i < subPlayerIdxList.Count; i++)
+        {
+            subPlayerCharacter.Add(Instantiate(subPlayerObjList[subPlayerIdxList[i]], new Vector3(5f, 0f, 0f), Quaternion.identity));
+            subPlayerCharacter[i].transform.parent = playerParentPos;
+            subPlayerCharacter[i].GetComponent<SubPlayerParent>().supporterNum = i;
+        }
     }
-    
+
+    void HandleStageIntro()
+    {
+        if (waveText == null)
+        {
+            nowGameState = GameState.BattleStart;
+            return;
+        }
+
+        if (!waveText.activeSelf)
+            waveText.SetActive(true);
+
+        waveText.GetComponent<Text>().text = "Stage " + (nowStageNum + 1) + " Start";
+        currentIntervalTime += Time.deltaTime;
+        if (currentIntervalTime >= maxIntervalTime)
+        {
+            currentIntervalTime = 0f;
+            nowGameState = GameState.BattleStart;
+        }
+    }
+
+    void StartStage()
+    {
+        levelManager?.StartStage(nowStageNum);
+        nowGameState = GameState.Battle;
+        DelayHideText();
+    }
+
+    void CheckStageClear()
+    {
+        if (nowGameResultState != GameResultState.None || levelManager == null)
+            return;
+
+        if (!levelManager.IsStageCleared)
+            return;
+
+        isUsingRefreshUI = false;
+        levelManager.ShowNextStagePortal();
+        GameEnd(GameResultState.Win);
+        nowStageNum++;
+    }
+
     public void DelayHideText()
     {
         if (waveText != null)
             waveText.SetActive(false);
     }
 
-    public void CheckWave()
+    void AlignMiniMapCamera()
     {
-        if (nowMonsterCnt - killMonsterCnt != 0)
+        if (miniMapCam == null)
             return;
 
-        if (nowWave >= levelManager.levelInfoList[nowStageNum].waveMaxMonsterNum.Length)
-        {
-            nowGameState = GameState.Result;
-            isUsingRefreshUI = false;
-            levelManager.ShowNextStagePortal();
-            GameEnd(GameResultState.Win);
-            nowStageNum++;
-            return;
-        }
-
-        nowGameState = GameState.BattleEnd;
-        waveText.SetActive(true);
-        waveText.GetComponent<Text>().text = "Wave " + nowWave + " Clear";
-        Invoke(nameof(StartNextWave), 1f);
-    }
-
-    public void StartNextWave()
-    {
-        startNextWave = true;
+        miniMapCam.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
     }
 
     IEnumerator Co_StartLevel()
@@ -241,10 +228,10 @@ public class GameManager : MonoBehaviour
         nowGameState = GameState.Ready;
     }
 
-    public void UpdateGameState(bool flag)
+    public void RegisterEnemyKill(MonsterType monsterType, int clusterId)
     {
-        if (flag)
-            killMonsterCnt++;
+        killMonsterCnt++;
+        levelManager?.NotifyEnemyKilled(monsterType, clusterId);
     }
 
     public void CreateAddMonster(int num)
@@ -259,6 +246,7 @@ public class GameManager : MonoBehaviour
             CheckCurrentBulletCnt();
             CheckCurrentGold();
             CheckRemainEnemyCnt();
+            CheckStageStatus();
         }
     }
 
@@ -275,7 +263,7 @@ public class GameManager : MonoBehaviour
 
         currentBullet.text = playerScript.GetCombatStatusText();
     }
-    
+
     public void CheckRemainEnemyCnt()
     {
         if (remainEnemyCnt == null || nowGameState == GameState.Result)
@@ -286,11 +274,21 @@ public class GameManager : MonoBehaviour
 
     public int RetRemainEnemyCnt()
     {
-        int cnt = 0;
-        for (int i = 0; i < nowWave; i++)
-            cnt += levelManager.levelInfoList[nowStageNum].waveMaxMonsterNum[i];
+        return Mathf.Max(0, nowMonsterCnt - killMonsterCnt);
+    }
 
-        return cnt - killMonsterCnt;
+    void CheckStageStatus()
+    {
+        if (currentWave == null)
+            return;
+
+        if (levelManager == null)
+        {
+            currentWave.text = "Stage : " + (nowStageNum + 1);
+            return;
+        }
+
+        currentWave.text = levelManager.GetStageStatusText(nowStageNum);
     }
 
     public void CheckCurrentGold()
@@ -304,13 +302,13 @@ public class GameManager : MonoBehaviour
         nowMonsterCnt = 0;
         killMonsterCnt = 0;
         nowGameResultState = GameResultState.None;
-        nowWave = 0;
         currentIntervalTime = 0f;
         startNextWave = false;
         isStartLevel = false;
 
         hpCanvas = GameObject.Find("Canvas_HP");
         cam_Follow = GameObject.Find("Follow_Cam");
+        miniMapCam = GameObject.Find("MiniMap_Cam");
         waveText = GameObject.Find("Wave Text");
         currentBullet = GameObject.Find("CurrentBulletText")?.GetComponent<Text>();
         currentGoldText = GameObject.Find("CurrentGoldText")?.GetComponent<Text>();
@@ -327,6 +325,8 @@ public class GameManager : MonoBehaviour
             ResultPopup.SetActive(false);
         if (PausePopup != null)
             PausePopup.SetActive(false);
+
+        AlignMiniMapCamera();
 
         Button dodgeButton = dodgeBtn != null ? dodgeBtn.GetComponent<Button>() : null;
         Button pauseButton = pauseBtn != null ? pauseBtn.GetComponent<Button>() : null;
@@ -347,6 +347,8 @@ public class GameManager : MonoBehaviour
             attackButton.onClick.AddListener(AttackPlayer);
         }
 
+        levelManager?.ResetStageRuntime();
+
         if (flag)
         {
             DOVirtual.DelayedCall(0.1f, () =>
@@ -362,7 +364,6 @@ public class GameManager : MonoBehaviour
     public void GoNextLevel()
     {
         isWaitStart = false;
-        nowStageNum++;
         RegisterSceneLoadCallback();
         SceneManager.LoadSceneAsync("Game");
     }
@@ -402,12 +403,15 @@ public class GameManager : MonoBehaviour
         if (ObjectPool.instance != null)
             ObjectPool.instance.AllHide();
 
-        SetTimeScale(false);
+        Time.timeScale = 1f;
+        isPause = false;
+        ToggleHpbar(true);
         nowPlayerCharacter = null;
         playerScript = null;
         isUsingRefreshUI = false;
         nowGameResultState = GameResultState.None;
         nowGameState = GameState.None;
+        levelManager?.ResetStageRuntime();
         SceneManager.LoadSceneAsync(1);
     }
 
@@ -441,9 +445,7 @@ public class GameManager : MonoBehaviour
             return;
 
         for (int i = 0; i < hpCanvas.transform.childCount; i++)
-        {
             hpCanvas.transform.GetChild(i).gameObject.SetActive(!flag);
-        }
     }
 
     public void AttackPlayer()
