@@ -11,7 +11,9 @@ Mintmi Adventure ProtoType
 최대 2명의 동료를 편성해서 같이 전투를 진행
 각 동료는 무기가 고정
 
-각 스테이지 별 5개의 웨이브를 진행
+각 스테이지 별 5개의 웨이브를 진행 
+
+=> 26.03.16 로그라이크 방식의 게임으로 변경중 
 
 ![MintmiAdventrue_battle](https://github.com/user-attachments/assets/09110eab-c459-41a0-8ce6-14117b97404d)
 ![MintmiAdventure_cobattle](https://github.com/user-attachments/assets/ee628bd9-8f73-4ad9-bb57-f8f92b9f4732)
