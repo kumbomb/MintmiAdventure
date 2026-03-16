@@ -56,7 +56,7 @@ public class Enemy : MonoBehaviour
                 anim.SetBool("isWalk", false);
             }
             nav.SetDestination(target.position);
-            //Navigation ¿ÏÀü Á¾·á
+            //Navigation ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             nav.isStopped = !isChase;
         }
     }
@@ -71,7 +71,7 @@ public class Enemy : MonoBehaviour
     {
         if (isChase)
         {
-            rigid.velocity = Vector3.zero;
+            rigid.linearVelocity = Vector3.zero;
             rigid.angularVelocity = Vector3.zero;
         }
     }
@@ -105,18 +105,18 @@ public class Enemy : MonoBehaviour
         
         RaycastHit[] rayHits = Physics.SphereCastAll(transform.position, targetRadius, transform.forward, targetRange, LayerMask.GetMask("Player"));
                
-        //¹üÀ§³»¿¡ ÇÃ·¹ÀÌ¾î°¡ °É¸®¸é ½÷¶ó
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½É¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (rayHits.Length > 0 && !isAttack)
         {
             StartCoroutine(Co_Attack());
         }
     }
 
-    //Enemy c ´Â ¸ØÃç¼­ ½ô
+    //Enemy c ï¿½ï¿½ ï¿½ï¿½ï¿½ç¼­ ï¿½ï¿½
     IEnumerator Co_Attack()
     {
         isChase = false;
-        rigid.velocity = Vector3.zero;
+        rigid.linearVelocity = Vector3.zero;
         isAttack = true;
 
         Vector3 dest = attackTarget.transform.position - transform.position;
@@ -146,7 +146,7 @@ public class Enemy : MonoBehaviour
 
                     yield return StartCoroutine(Co_Delay(0.5f));
 
-                    rigid.velocity = Vector3.zero;
+                    rigid.linearVelocity = Vector3.zero;
                     MeleeArea.enabled = false;
 
                     yield return StartCoroutine(Co_Delay(1f));
@@ -159,9 +159,9 @@ public class Enemy : MonoBehaviour
                     instantBullet.transform.position = transform.position;
                     instantBullet.transform.rotation = transform.rotation;
                     Rigidbody bulletRigid = instantBullet.GetComponent<Rigidbody>();
-                    bulletRigid.velocity = Vector3.zero;
+                    bulletRigid.linearVelocity = Vector3.zero;
                     instantBullet.SetActive(true);
-                    bulletRigid.velocity = transform.forward * 20;
+                    bulletRigid.linearVelocity = transform.forward * 20;
 
                     yield return StartCoroutine(Co_Delay(2f));
                 }
@@ -197,7 +197,7 @@ public class Enemy : MonoBehaviour
 
     public void ChasingStart()
     {
-        //º¸½º´Â ÃßÀû x
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ x
         if (enemyType != MonsterType.EnemyBoss)
             Invoke("ChaseStart", 2f);
     }
@@ -211,7 +211,7 @@ public class Enemy : MonoBehaviour
         }
     }
     
-    #region ======= ÇÇ°Ý °ü·Ã =======
+    #region ======= ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½ =======
 
     private void OnTriggerEnter(Collider other)
     {
@@ -236,7 +236,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    // ============ Tower °ü·Ã =============== //
+    // ============ Tower ï¿½ï¿½ï¿½ï¿½ =============== //
 
     public void OnDamagedFromTower(BuffType buffType, float value, float time)
     {
@@ -325,7 +325,7 @@ public class Enemy : MonoBehaviour
         
     // ======================================== //
 
-    // ½ÇÁ¦ µ¥¹ÌÁö Ã³¸®
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade, int damage)
     {
         if (damage > 0)
@@ -338,7 +338,7 @@ public class Enemy : MonoBehaviour
 
             if (curHealth <= 0)
             {
-                rigid.velocity = Vector3.zero;
+                rigid.linearVelocity = Vector3.zero;
                 if (isDead)
                     yield break;
                 miniMapTop.color = deathColor;
@@ -371,7 +371,7 @@ public class Enemy : MonoBehaviour
                 }
                 else
                 {
-                    //³¯¾Æ°¡´Â¿¬Ãâ
+                    //ï¿½ï¿½ï¿½Æ°ï¿½ï¿½Â¿ï¿½ï¿½ï¿½
                     reactVec = reactVec.normalized;
                     reactVec += Vector3.up;
                     rigid.AddForce(reactVec * 2, ForceMode.Impulse);
@@ -387,7 +387,7 @@ public class Enemy : MonoBehaviour
                 rigid.AddForce(transform.forward * -10f, ForceMode.Impulse);
 
                 yield return new WaitForSeconds(0.1f);
-                rigid.velocity = Vector3.zero;
+                rigid.linearVelocity = Vector3.zero;
                 OnDamageMaterial(Color.white);
                 isChase = true;
             }

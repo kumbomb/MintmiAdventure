@@ -387,7 +387,7 @@ public class Player : MonoBehaviour
 
         yield return StartCoroutine(Co_Delay(0.3f));
         grenade.transform.parent = null;
-        rigidGrenade.velocity = new Vector3(throwVector.x * 20f, 10f, throwVector.z * 20f);
+        rigidGrenade.linearVelocity = new Vector3(throwVector.x * 20f, 10f, throwVector.z * 20f);
         rigidGrenade.AddTorque(Vector3.forward * 15, ForceMode.Impulse);
 
         yield return StartCoroutine(Co_Delay(1f));
@@ -486,7 +486,7 @@ public class Player : MonoBehaviour
         {
             isDead = true;
             moveVec = Vector3.zero;
-            rigid.velocity = Vector3.zero;
+            rigid.linearVelocity = Vector3.zero;
             rigid.angularVelocity = Vector3.zero;
             GameManager.instance.GameEnd(GameResultState.Lose);
             anim.SetTrigger("doDie");
@@ -506,7 +506,7 @@ public class Player : MonoBehaviour
 
             if (bossAttack)
             {
-                rigid.velocity = Vector3.zero;
+                rigid.linearVelocity = Vector3.zero;
             }
         }
     }

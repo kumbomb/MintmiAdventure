@@ -751,7 +751,7 @@ public class CharacterBehaviour : MonoBehaviour {
 		if (hit.moveDirection.y < -0.3F)
 			return;
 		Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
-		body.velocity = pushDir;
+		body.linearVelocity = pushDir;
 	}
 
 

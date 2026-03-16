@@ -137,7 +137,7 @@ public class SubPlayer : SubPlayerParent
                 if (headingToEnemyDist < nowEquipWeapon.weaponSetInfo.atkRadius)
                 {
                     ToggleChaseState(false);
-                    rigid.velocity = Vector3.zero;                    
+                    rigid.linearVelocity = Vector3.zero;                    
                 }
                 //공격 사정거리에 들어오지 않았으면 
                 //추적
@@ -152,7 +152,7 @@ public class SubPlayer : SubPlayerParent
                 ToggleChaseState(false);
                 Quaternion rot = Quaternion.LookRotation(headingToPlayerVec.normalized);
                 transform.rotation = rot;
-                rigid.velocity = Vector3.zero;
+                rigid.linearVelocity = Vector3.zero;
             }
         }
         else
@@ -337,7 +337,7 @@ public class SubPlayer : SubPlayerParent
             if (isDead)
                 yield break;
             isDead = true;
-            rigid.velocity = Vector3.zero;
+            rigid.linearVelocity = Vector3.zero;
             rigid.angularVelocity = Vector3.zero;
             hpBarPrefab.SetActive(false);
             isOnDamage = false;
@@ -356,7 +356,7 @@ public class SubPlayer : SubPlayerParent
             isOnDamage = false;
 
             if (bossAttack)
-                rigid.velocity = Vector3.zero;
+                rigid.linearVelocity = Vector3.zero;
         }
     }
 }

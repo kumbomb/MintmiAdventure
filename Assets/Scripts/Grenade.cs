@@ -19,13 +19,13 @@ public class Grenade : MonoBehaviour
     IEnumerator Co_Explosion()
     {
         yield return new WaitForSeconds(1f);
-        rigid.velocity = Vector3.zero;
+        rigid.linearVelocity = Vector3.zero;
         rigid.angularVelocity = Vector3.zero;
 
         meshObj.SetActive(false);
         particleObj.SetActive(true);
         
-        //ÅÍÁø ±¸ ¹üÀ§¿¡ °É¸° ¸ðµç obj
+        //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½É¸ï¿½ ï¿½ï¿½ï¿½ obj
         RaycastHit[] rayHits = Physics.SphereCastAll(transform.position, 15f, Vector3.up, 0f, LayerMask.GetMask("Enemy"));
 
         foreach(RaycastHit hitObj in rayHits)

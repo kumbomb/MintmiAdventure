@@ -64,7 +64,7 @@ public class Weapon : EquipWeapon
         bulletObj.GetComponent<Bullet>().damage = (int)Random.Range(weaponSetInfo.minDamage, weaponSetInfo.MaxDamage);
         bulletObj.SetActive(true);
         Rigidbody bulletRig = bulletObj.GetComponent<Rigidbody>();
-        bulletRig.velocity = _bulletPos.forward * 100f;
+        bulletRig.linearVelocity = _bulletPos.forward * 100f;
 
         yield return null;
     }
