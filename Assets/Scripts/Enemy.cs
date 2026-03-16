@@ -1,5 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,6 +9,8 @@ public class Enemy : MonoBehaviour
     [SerializeField] int curHealth;
     [SerializeField] int maxHealth;
     [SerializeField] GameObject item;
+    [SerializeField] GameObject hpBarPrefab;
+    [SerializeField] Vector3 hpBarOffset = new Vector3(0f, 2.8f, 0f);
     public Transform target;
     public Transform attackTarget;
     public BoxCollider MeleeArea;
@@ -19,24 +21,21 @@ public class Enemy : MonoBehaviour
 
     [SerializeField] Rigidbody rigid;
     public BoxCollider boxCollider;
-
     [SerializeField] MeshRenderer[] matRenders;
 
     public NavMeshAgent nav;
     public Animator anim;
-
     public SpriteRenderer miniMapTop;
     public Color aliveColor;
     public Color deathColor;
 
-    int resetHealth;
     float defaultSpeed;
     float defaultAccSpeed;
     float defaultAngularSpeed;
-
     bool isSlow;
     bool isBurn;
     bool isAddictive;
+    HpBar enemyHpBar;
 
     private void Awake()
     {
@@ -44,6 +43,12 @@ public class Enemy : MonoBehaviour
         matRenders = GetComponentsInChildren<MeshRenderer>();
         if (MeleeArea != null)
             MeleeArea.enabled = false;
+    }
+
+    private void OnDisable()
+    {
+        if (enemyHpBar != null)
+            enemyHpBar.gameObject.SetActive(false);
     }
     
     private void Update()
@@ -56,7 +61,6 @@ public class Enemy : MonoBehaviour
                 anim.SetBool("isWalk", false);
             }
             nav.SetDestination(target.position);
-            //Navigation ���� ����
             nav.isStopped = !isChase;
         }
     }
@@ -78,8 +82,7 @@ public class Enemy : MonoBehaviour
 
     void Targeting()
     {
-        if (enemyType == MonsterType.EnemyBoss || isDead ||
-            GameManager.instance.nowGameResultState != GameResultState.None)
+        if (enemyType == MonsterType.EnemyBoss || isDead || GameManager.instance.nowGameResultState != GameResultState.None)
             return;
 
         float targetRadius = 0f;
@@ -91,12 +94,10 @@ public class Enemy : MonoBehaviour
                 targetRadius = 2f;
                 targetRange = 5f;
                 break;
-
             case MonsterType.EnemyB:
                 targetRadius = 2f;
                 targetRange = 10f;
                 break;
-
             case MonsterType.EnemyC:
                 targetRadius = 15f;
                 targetRange = 20f;
@@ -104,15 +105,10 @@ public class Enemy : MonoBehaviour
         }
         
         RaycastHit[] rayHits = Physics.SphereCastAll(transform.position, targetRadius, transform.forward, targetRange, LayerMask.GetMask("Player"));
-               
-        //�������� �÷��̾ �ɸ��� ����
         if (rayHits.Length > 0 && !isAttack)
-        {
             StartCoroutine(Co_Attack());
-        }
     }
 
-    //Enemy c �� ���缭 ��
     IEnumerator Co_Attack()
     {
         isChase = false;
@@ -120,51 +116,37 @@ public class Enemy : MonoBehaviour
         isAttack = true;
 
         Vector3 dest = attackTarget.transform.position - transform.position;
-        transform.LookAt(transform.position + (dest * 3f));
-
+        transform.LookAt(transform.position + dest * 3f);
         anim.SetBool("isAttack", true);
         
         switch (enemyType)
         {
             case MonsterType.EnemyA:
-                {
-                    yield return StartCoroutine(Co_Delay(0.5f));
-                    MeleeArea.enabled = true;
-
-                    yield return StartCoroutine(Co_Delay(1f));
-
-                    MeleeArea.enabled = false;
-                    
-                    yield return StartCoroutine(Co_Delay(1f));
-                }
+                yield return StartCoroutine(Co_Delay(0.5f));
+                MeleeArea.enabled = true;
+                yield return StartCoroutine(Co_Delay(1f));
+                MeleeArea.enabled = false;
+                yield return StartCoroutine(Co_Delay(1f));
                 break;
             case MonsterType.EnemyB:
-                {
-                    yield return StartCoroutine(Co_Delay(0.5f));
-                    rigid.AddForce(transform.forward * 30, ForceMode.Impulse);
-                    MeleeArea.enabled = true;
-
-                    yield return StartCoroutine(Co_Delay(0.5f));
-
-                    rigid.linearVelocity = Vector3.zero;
-                    MeleeArea.enabled = false;
-
-                    yield return StartCoroutine(Co_Delay(1f));
-                }
+                yield return StartCoroutine(Co_Delay(0.5f));
+                rigid.AddForce(transform.forward * 30, ForceMode.Impulse);
+                MeleeArea.enabled = true;
+                yield return StartCoroutine(Co_Delay(0.5f));
+                rigid.linearVelocity = Vector3.zero;
+                MeleeArea.enabled = false;
+                yield return StartCoroutine(Co_Delay(1f));
                 break;
             case MonsterType.EnemyC:
-                {
-                    yield return StartCoroutine(Co_Delay(.5f));
-                    GameObject instantBullet = ObjectPool.instance.PopFromPool("EnemyCBullet", ObjectPool.instance.MonsterBulletPool);//Instantiate(bullet, transform.position, transform.rotation);
-                    instantBullet.transform.position = transform.position;
-                    instantBullet.transform.rotation = transform.rotation;
-                    Rigidbody bulletRigid = instantBullet.GetComponent<Rigidbody>();
-                    bulletRigid.linearVelocity = Vector3.zero;
-                    instantBullet.SetActive(true);
-                    bulletRigid.linearVelocity = transform.forward * 20;
-
-                    yield return StartCoroutine(Co_Delay(2f));
-                }
+                yield return StartCoroutine(Co_Delay(0.5f));
+                GameObject instantBullet = ObjectPool.instance.PopFromPool("EnemyCBullet", ObjectPool.instance.MonsterBulletPool);
+                instantBullet.transform.position = transform.position;
+                instantBullet.transform.rotation = transform.rotation;
+                Rigidbody bulletRigid = instantBullet.GetComponent<Rigidbody>();
+                bulletRigid.linearVelocity = Vector3.zero;
+                instantBullet.SetActive(true);
+                bulletRigid.linearVelocity = transform.forward * 20;
+                yield return StartCoroutine(Co_Delay(2f));
                 break;
         }
 
@@ -192,14 +174,41 @@ public class Enemy : MonoBehaviour
             MeleeArea.enabled = false;
         isAttack = false;
         miniMapTop.color = aliveColor;
+        EnsureHpBar();
+        UpdateHpBar();
+        enemyHpBar.gameObject.SetActive(true);
         ChaseStart();
+    }
+
+    void EnsureHpBar()
+    {
+        if (enemyHpBar != null)
+            return;
+
+        if (hpBarPrefab == null)
+            hpBarPrefab = Resources.Load<GameObject>("Prefabs/UI/HP_Bar");
+
+        Canvas hpCanvas = GameObject.Find("Canvas_HP")?.GetComponent<Canvas>();
+        if (hpCanvas == null || hpBarPrefab == null)
+            return;
+
+        GameObject hpBarObject = Instantiate(hpBarPrefab, hpCanvas.transform);
+        enemyHpBar = hpBarObject.GetComponent<HpBar>();
+        enemyHpBar.targetTr = transform;
+        enemyHpBar.offset = hpBarOffset;
+        enemyHpBar.setHpBar = true;
+    }
+
+    void UpdateHpBar()
+    {
+        if (enemyHpBar != null)
+            enemyHpBar.UpdateHp(curHealth, maxHealth);
     }
 
     public void ChasingStart()
     {
-        //������ ���� x
         if (enemyType != MonsterType.EnemyBoss)
-            Invoke("ChaseStart", 2f);
+            Invoke(nameof(ChaseStart), 2f);
     }
 
     void ChaseStart()
@@ -211,32 +220,22 @@ public class Enemy : MonoBehaviour
         }
     }
     
-    #region ======= �ǰ� ���� =======
-
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Melee"))
         {
             Weapon weapon = other.GetComponent<Weapon>();
-            //curHealth -= weapon.thisWeaponData.damage;
-
-            Vector3 _reactVec = transform.position - other.transform.position;
-
-            StartCoroutine(OnDamage(_reactVec, false, weapon.weaponSetInfo.MaxDamage));
+            Vector3 reactVec = transform.position - other.transform.position;
+            StartCoroutine(OnDamage(reactVec, false, weapon.weaponSetInfo.MaxDamage));
         }
         else if (other.CompareTag("Bullet"))
         {
-            Bullet bullet = other.GetComponent<Bullet>();
-            //curHealth -= bullet.damage;
-
-            Vector3 _reactVec = transform.position - other.transform.position;
+            Bullet bulletComponent = other.GetComponent<Bullet>();
+            Vector3 reactVec = transform.position - other.transform.position;
             other.gameObject.SetActive(false);
-            //Destroy(other.gameObject);
-            StartCoroutine(OnDamage(_reactVec, false, bullet.damage));
+            StartCoroutine(OnDamage(reactVec, false, bulletComponent.damage));
         }
     }
-
-    // ============ Tower ���� =============== //
 
     public void OnDamagedFromTower(BuffType buffType, float value, float time)
     {
@@ -263,14 +262,14 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    //Freeze Slow 
     void Slow(float value, float time)
     {
         nav.speed *= value;
         nav.acceleration *= value;
         nav.angularSpeed *= value;
-        LeanTween.delayedCall(time, ReturnDefaultSpeed);
+        DOVirtual.DelayedCall(time, ReturnDefaultSpeed);
     }
+
     void ReturnDefaultSpeed()
     {
         isSlow = false;
@@ -279,11 +278,11 @@ public class Enemy : MonoBehaviour
         nav.angularSpeed = defaultAngularSpeed;
     }
     
-    //Blaze Burn
     void Burn(float value, float time)
     {
         StartCoroutine(OnBurnDamage(value, time));
     }
+
     IEnumerator OnBurnDamage(float value, float time)
     {
         for (int i = 0; i < (int)time; i++)
@@ -293,19 +292,17 @@ public class Enemy : MonoBehaviour
                 isBurn = false;
                 yield break;
             }
-            //curHealth -= 10;
             StartCoroutine(OnDamage(transform.position, false, (int)value));
             yield return StartCoroutine(Co_Delay(1f));
-            //yield return new WaitForSeconds(1f);
         }
         isBurn = false;
     }
 
-    //Poison Addictive
     void Addictive(float value, float time)
     {
         StartCoroutine(OnAddictiveDamage(value, time));
     }
+
     IEnumerator OnAddictiveDamage(float value, float time)
     {
         for (int i = 0; i < (int)time; i++)
@@ -315,162 +312,119 @@ public class Enemy : MonoBehaviour
                 isAddictive = false;
                 yield break;
             }
-            //curHealth -= 8;
             StartCoroutine(OnDamage(transform.position, false, (int)value));
             yield return StartCoroutine(Co_Delay(1f));
-            //yield return new WaitForSeconds(1f);
         }
         isAddictive = false;
     }
         
-    // ======================================== //
-
-    // ���� ������ ó��
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade, int damage)
     {
-        if (damage > 0)
+        if (damage <= 0)
+            yield break;
+
+        isChase = false;
+        OnDamageMaterial(Color.red);
+        curHealth -= damage;
+        UpdateHpBar();
+        DamageTextManager.ShowDamage(transform.position + hpBarOffset, damage, Color.white);
+
+        if (curHealth <= 0)
         {
+            rigid.linearVelocity = Vector3.zero;
+            if (isDead)
+                yield break;
+
+            miniMapTop.color = deathColor;
+            isDead = true;
+            OnDamageMaterial(Color.gray);
+            gameObject.layer = 14;
+            GameManager.instance.UpdateGameState(true);
+            nav.speed = defaultSpeed;
+            nav.acceleration = defaultAccSpeed;
+            nav.angularSpeed = defaultAngularSpeed;
+            nav.enabled = false;
             isChase = false;
-            OnDamageMaterial(Color.red);
+            isAttack = false;
+            if (MeleeArea != null)
+                MeleeArea.enabled = false;
+            anim.SetTrigger("doDie");
+            if (enemyHpBar != null)
+                enemyHpBar.gameObject.SetActive(false);
 
-            //reactVec = reactVec.normalized;
-            curHealth -= damage;
-
-            if (curHealth <= 0)
+            if (isGrenade)
             {
-                rigid.linearVelocity = Vector3.zero;
-                if (isDead)
-                    yield break;
-                miniMapTop.color = deathColor;
-                isDead = true;
-                OnDamageMaterial(Color.gray);
-                gameObject.layer = 14;
-
-                GameManager.instance.UpdateGameState(true);
-
-                nav.speed = defaultSpeed;
-                nav.acceleration = defaultAccSpeed;
-                nav.angularSpeed = defaultAngularSpeed;
-
-                nav.enabled = false;
-                isChase = false;
-                isAttack = false;
-
-                if (MeleeArea != null)
-                    MeleeArea.enabled = false;
-                anim.SetTrigger("doDie");
-
-                if (isGrenade)
-                {
-                    reactVec = reactVec.normalized;
-                    reactVec += (Vector3.up * 6);
-
-                    rigid.freezeRotation = false;
-                    rigid.AddForce(reactVec * 5, ForceMode.Impulse);
-                    rigid.AddTorque(reactVec * 15, ForceMode.Impulse);
-                }
-                else
-                {
-                    //���ư��¿���
-                    reactVec = reactVec.normalized;
-                    reactVec += Vector3.up;
-                    rigid.AddForce(reactVec * 2, ForceMode.Impulse);
-                }
-
-                DropItem();
-                //StartCoroutine("Co_DropItem");
-                //StopAllCoroutines();
+                reactVec = reactVec.normalized;
+                reactVec += Vector3.up * 6;
+                rigid.freezeRotation = false;
+                rigid.AddForce(reactVec * 5, ForceMode.Impulse);
+                rigid.AddTorque(reactVec * 15, ForceMode.Impulse);
             }
             else
             {
-                //reactVec += (Vector3.up * 6);
-                rigid.AddForce(transform.forward * -10f, ForceMode.Impulse);
-
-                yield return new WaitForSeconds(0.1f);
-                rigid.linearVelocity = Vector3.zero;
-                OnDamageMaterial(Color.white);
-                isChase = true;
+                reactVec = reactVec.normalized;
+                reactVec += Vector3.up;
+                rigid.AddForce(reactVec * 2, ForceMode.Impulse);
             }
+
+            DropItem();
+        }
+        else
+        {
+            rigid.AddForce(transform.forward * -10f, ForceMode.Impulse);
+            yield return new WaitForSeconds(0.1f);
+            rigid.linearVelocity = Vector3.zero;
+            OnDamageMaterial(Color.white);
+            isChase = true;
         }
     }
-
-    #endregion
 
     public void DropItem()
     {
         int maxCnt = enemyType == MonsterType.EnemyBoss ? 5 : 1;
-
         for (int i = 0; i < maxCnt; i++)
-            LeanTween.delayedCall((i * 0.1f), SpawnItem);
-
-        Invoke("DelayDestroy", 2f);
+        {
+            float delay = i * 0.1f;
+            DOVirtual.DelayedCall(delay, SpawnItem);
+        }
+        Invoke(nameof(DelayDestroy), 2f);
     }
 
     void SpawnItem()
     {
-       // Debug.Log("drop");
         GameObject itemObj = ObjectPool.instance.PopFromPool(ItemType.GoldCoin.ToString(), ObjectPool.instance.ItemPool);
         itemObj.SetActive(true);
-        itemObj.transform.position = this.transform.position;
+        itemObj.transform.position = transform.position;
         itemObj.transform.rotation = Quaternion.identity;
-        Rigidbody rigidd = itemObj.GetComponent<Rigidbody>();
-        rigidd.AddForce(transform.up * ((float)Random.Range(15, 22)), ForceMode.Impulse);
+        Rigidbody itemRigid = itemObj.GetComponent<Rigidbody>();
+        itemRigid.AddForce(transform.up * Random.Range(15f, 22f), ForceMode.Impulse);
         itemObj.GetComponent<Item>().SettingItem();
-    }
-
-    IEnumerator Co_DropItem()
-    {
-        int maxCnt = enemyType == MonsterType.EnemyBoss ? 5 : 1;
-        for (int i = 0; i < maxCnt; i++)
-        {
-            Debug.Log("drop");
-            DropItem();
-            yield return null;
-        }
-        yield return StartCoroutine(Co_Delay(2f));
-       // yield return new WaitForSeconds(2f);
-        DelayDestroy();
-        //Invoke("DelayDestroy", 2f);
     }
 
     public void DelayDestroy()
     {
-        this.gameObject.SetActive(false);
-       // ObjectPool.instance.PushToPool(enemyType.ToString(), this.gameObject);
+        gameObject.SetActive(false);
     }
 
     public void HitByGrenade(Vector3 explosionPos)
     {
-       // curHealth -= 200;
         Vector3 reactVec = transform.position - explosionPos;
-        StartCoroutine(OnDamage(reactVec, true, 0));
+        StartCoroutine(OnDamage(reactVec, true, 200));
     }
 
     public void OnDamageMaterial(Color col)
     {
-        foreach(MeshRenderer mesh in matRenders)
-        {
+        foreach (MeshRenderer mesh in matRenders)
             mesh.material.color = col;
-        }
     }
     
-    IEnumerator Co_Delay(float _delaytime)
+    IEnumerator Co_Delay(float delayTime)
     {
         float nowTime = 0f;
-        while (nowTime < _delaytime)
+        while (nowTime < delayTime)
         {
             nowTime += Time.deltaTime;
             yield return null;
         }
-    }
-
-    void DelayTime(float time)
-    {
-        float delayTime = 0f;
-
-        while(delayTime <= time)
-            delayTime += Time.deltaTime;
-
-       // return true;
     }
 }

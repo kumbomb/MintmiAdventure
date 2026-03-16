@@ -1,5 +1,6 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class Tower : MonoBehaviour
@@ -23,16 +24,18 @@ public class Tower : MonoBehaviour
     private void OnDisable()
     {
         nowTime = 0f;
+        towerObj.transform.DOKill();
         towerObj.transform.localScale = Vector3.zero;
-        //LeanTween.cancelAll();
+        isStart = false;
     }
 
     public void SettingTower()
     {
         ActiveSpawnEffect();
+        towerObj.transform.DOKill();
         towerObj.transform.localScale = Vector3.zero;
-        LeanTween.scale(towerObj, Vector3.one, .5f);
-        LeanTween.delayedCall(.6f, ActiveAttackEffect);
+        towerObj.transform.DOScale(Vector3.one, 0.5f);
+        DOVirtual.DelayedCall(0.6f, ActiveAttackEffect);
     }
 
     void ActiveSpawnEffect()
@@ -55,16 +58,17 @@ public class Tower : MonoBehaviour
     void DestroyTower()
     {
         ActiveSpawnEffect();
-        LeanTween.scale(towerObj, Vector3.zero, 0.5f);
-        Destroy(this.gameObject, 0.6f);
+        towerObj.transform.DOKill();
+        towerObj.transform.DOScale(Vector3.zero, 0.5f);
+        DOVirtual.DelayedCall(0.6f, () => gameObject.SetActive(false));
     }
 
     private void Update()
     {
-        if(isStart)
+        if (isStart)
         {
             nowTime += Time.deltaTime;
-            if(nowTime >= lifeTime)
+            if (nowTime >= lifeTime)
             {
                 isStart = false;
                 DestroyTower();

@@ -5,36 +5,31 @@ using UnityEngine;
 public class Weapon : EquipWeapon
 {
     public WeaponSetInfo weaponSetInfo;
-    //public WeaponData thisWeaponData = new WeaponData();
     public int maxAmmo = 0;
     public int currentAmmo = 0;
 
     public void OnEnable()
     {
-        if(weaponSetInfo.attackType == AttackType.Range)
-        {
-            currentAmmo = maxAmmo;
-        }
-        else
-        {
+        if (weaponSetInfo.attackType == AttackType.Melee)
             weaponSetInfo.meleeArea.enabled = false;
-        }
     }
 
     public void UseWeapon(Transform position = null)
     {
-        if(weaponSetInfo.attackType == AttackType.Melee)
+        if (weaponSetInfo.attackType == AttackType.Melee)
         {
-            //StopCoroutine("Co_Swing");
             StartCoroutine(Co_Swing());
+            return;
         }
-        else if (weaponSetInfo.attackType == AttackType.Range)
+
+        if (weaponSetInfo.attackType == AttackType.Range)
         {
             switch (weaponSetInfo.weaponType)
             {
                 case WeaponType.HandGun:
                 case WeaponType.SubMachineGun:
-                    currentAmmo--;
+                case WeaponType.HandShotGun:
+                case WeaponType.Shotgun:
                     StartCoroutine(Co_Shot(position));
                     break;
             }
@@ -44,28 +39,25 @@ public class Weapon : EquipWeapon
     IEnumerator Co_Swing()
     {
         yield return new WaitForSeconds(0.2f);
-
         weaponSetInfo.meleeArea.enabled = true;
         weaponSetInfo.trailEffect.enabled = true;
 
         yield return new WaitForSeconds(0.1f);
         weaponSetInfo.meleeArea.enabled = false;
 
-
         yield return new WaitForSeconds(0.3f);
         weaponSetInfo.trailEffect.enabled = false;
     }
 
-    IEnumerator Co_Shot(Transform _bulletPos)
+    IEnumerator Co_Shot(Transform bulletTransform)
     {
         GameObject bulletObj = ObjectPool.instance.PopFromPool(weaponSetInfo.weaponType.ToString(), ObjectPool.instance.PlayerBulletPool);
-        bulletObj.transform.position = _bulletPos.position;
-        bulletObj.transform.rotation = _bulletPos.rotation;
+        bulletObj.transform.position = bulletTransform.position;
+        bulletObj.transform.rotation = bulletTransform.rotation;
         bulletObj.GetComponent<Bullet>().damage = (int)Random.Range(weaponSetInfo.minDamage, weaponSetInfo.MaxDamage);
         bulletObj.SetActive(true);
         Rigidbody bulletRig = bulletObj.GetComponent<Rigidbody>();
-        bulletRig.linearVelocity = _bulletPos.forward * 100f;
-
+        bulletRig.linearVelocity = bulletTransform.forward * 100f;
         yield return null;
     }
     
@@ -96,11 +88,7 @@ public class Weapon : EquipWeapon
         return (int)weaponSetInfo.WeaponBehaviour;
     }
 
-
-
-
     public void StopAttack(Transform tf)
     {
-               
     }
 }

@@ -1,5 +1,6 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class Grenade : MonoBehaviour
@@ -10,7 +11,6 @@ public class Grenade : MonoBehaviour
     [SerializeField] TowerType thisType;
     [SerializeField] float coolTime; 
 
-    // Start is called before the first frame update
     void Start()
     {
         StartCoroutine("Co_Explosion");
@@ -25,23 +25,20 @@ public class Grenade : MonoBehaviour
         meshObj.SetActive(false);
         particleObj.SetActive(true);
         
-        //���� �� ������ �ɸ� ��� obj
         RaycastHit[] rayHits = Physics.SphereCastAll(transform.position, 15f, Vector3.up, 0f, LayerMask.GetMask("Enemy"));
 
-        foreach(RaycastHit hitObj in rayHits)
+        foreach (RaycastHit hitObj in rayHits)
             hitObj.transform.GetComponent<Enemy>().HitByGrenade(transform.position);
 
-        Vector3 originScale;
-        GameObject Gobj = ObjectPool.instance.PopFromPool(thisType.ToString(), ObjectPool.instance.TowerPool);
-        Gobj.transform.position = new Vector3(transform.position.x, Gobj.transform.localScale.y * 0.5f, transform.position.z);
-        originScale = Gobj.transform.localScale;
+        GameObject towerObject = ObjectPool.instance.PopFromPool(thisType.ToString(), ObjectPool.instance.TowerPool);
+        towerObject.transform.position = new Vector3(transform.position.x, towerObject.transform.localScale.y * 0.5f, transform.position.z);
 
-        LeanTween.delayedCall(.5f,
-            () => {
-                Gobj.SetActive(true);
-                Gobj.GetComponent<Tower>().SettingTower();
-            });
+        DOVirtual.DelayedCall(0.5f, () =>
+        {
+            towerObject.SetActive(true);
+            towerObject.GetComponent<Tower>().SettingTower();
+        });
 
-        Destroy(gameObject,2.5f);
+        Destroy(gameObject, 2.5f);
     }
 }

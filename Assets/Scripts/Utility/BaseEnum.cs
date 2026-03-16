@@ -424,40 +424,63 @@ public class ObjectPoolDataClass
     public void Initialize(Transform parent = null)
     {
         nowCnt = 0;
+        poolList.Clear();
         for (int i = 0; i < poolCount; i++)
         {
-            GameObject gobj = CreateItem(parent);
-            gobj.name = poolItemName + i;
+            GameObject gobj = CreateItem(parent, i);
             poolList.Add(gobj);
         }
     }
+
     public void Push(GameObject item, Transform parent = null)
     {
+        if (item == null)
+            return;
+
         item.transform.SetParent(parent);
         item.SetActive(false);
-        poolList.Add(item);
+
+        if (!poolList.Contains(item))
+            poolList.Add(item);
     }
+
     public GameObject Pop(Transform parent = null)
     {
-        if (poolList.Count == 0)
-            poolList.Add(CreateItem(parent));
-        GameObject item = poolList[nowCnt%poolCount];
-        if (nowCnt == poolCount - 1)
-            nowCnt = 0;
-        else
-            nowCnt++;
-        return item;
+        for (int i = 0; i < poolList.Count; i++)
+        {
+            int index = (nowCnt + i) % poolList.Count;
+            GameObject pooledItem = poolList[index];
+            if (pooledItem.activeSelf)
+                continue;
+
+            nowCnt = (index + 1) % poolList.Count;
+            pooledItem.transform.SetParent(parent);
+            return pooledItem;
+        }
+
+        GameObject createdItem = CreateItem(parent, poolList.Count);
+        poolList.Add(createdItem);
+        poolCount = poolList.Count;
+        nowCnt = 0;
+        return createdItem;
     }
-    private GameObject CreateItem(Transform parent = null)
+
+    private GameObject CreateItem(Transform parent = null, int index = -1)
     {
         GameObject item = Object.Instantiate(prefab) as GameObject;
-        item.name = poolItemName ;
+        item.name = index >= 0 ? poolItemName + index : poolItemName;
         item.transform.SetParent(parent);
         item.SetActive(false);
         return item;
     }
 
 }
+
+
+
+
+
+
 
 
 

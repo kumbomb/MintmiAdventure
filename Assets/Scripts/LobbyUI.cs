@@ -1,3 +1,4 @@
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -28,14 +29,22 @@ public class LobbyUI : MonoBehaviour
 
     public void SettingStageNum()
     {
-        string txt = "";
-
-        if (GameManager.instance.nowStageNum <= 1)
-            txt = "Stage : " + (GameManager.instance.nowStageNum + 1).ToString();
-        else
-            txt = "Stage Complete";
+        int maxStageCount = GetStageCount();
+        string txt = GameManager.instance.nowStageNum < maxStageCount
+            ? "Stage : " + (GameManager.instance.nowStageNum + 1)
+            : "Stage Complete";
 
         stageNum.GetComponent<Text>().text = txt;
+    }
+
+    int GetStageCount()
+    {
+        TextAsset stageData = Resources.Load<TextAsset>("ResourcesData/Stage");
+        if (stageData == null)
+            return 0;
+
+        string[] lines = stageData.text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        return lines.Length;
     }
 
     public void GoStage()

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,11 +15,14 @@ public class ObjectPool : MonoBehaviour
     
     private void Awake()
     {
-        if (instance == null)
+        if (instance != null && instance != this)
         {
-            instance = this;
-            DontDestroyOnLoad(this);
+            Destroy(gameObject);
+            return;
         }
+
+        instance = this;
+        DontDestroyOnLoad(this);
         
         for (int i = 0; i < objectPoolList.Count; i++)
         {
@@ -67,7 +70,7 @@ public class ObjectPool : MonoBehaviour
     ObjectPoolDataClass GetPoolItem(string itemName)
     {
         for (int i = 0; i < objectPoolList.Count; ++i)
-    {
+        {
             if (objectPoolList[i].poolItemName.Equals(itemName))
                 return objectPoolList[i];
         }
@@ -104,6 +107,4 @@ public class ObjectPool : MonoBehaviour
                 ItemPool.GetChild(i).gameObject.SetActive(false);
         }
     }
-
-    //public 
 }

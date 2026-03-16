@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,10 +13,9 @@ public class GrenadeState : MonoBehaviour
     [SerializeField] Image itemImg;
     [SerializeField] float coolTime = 6f;
     [SerializeField] float nowTime = 0f;
-    // Start is called before the first frame update
+
     void Start()
     {
-        //obj.Stop();
         ChargingEffectObj.SetActive(false);
         thisButton.onClick.AddListener(ThrowGrenade);
         btnSlider.value = 1f;
@@ -25,11 +24,11 @@ public class GrenadeState : MonoBehaviour
 
     public void ThrowGrenade()
     {
-        if (GameManager.instance.playerScript.RetThrowState() != -1 
-            || GameManager.instance.playerScript.isReload
-            || GameManager.instance.playerScript.isSwap 
-            || GameManager.instance.playerScript.isDodge)
+        if (GameManager.instance.playerScript.RetThrowState() != -1
+            || GameManager.instance.playerScript.isSwap
+            || GameManager.instance.playerScript.isThrow)
             return;
+
         thisButton.interactable = false;
         StartCoroutine("Co_CheckCoolTime");
         GameManager.instance.playerScript.ToggleThrow(equipPos);
@@ -40,10 +39,10 @@ public class GrenadeState : MonoBehaviour
         btnSlider.value = 0f;
         yield return null;
 
-        while(nowTime <= coolTime)
+        while (nowTime <= coolTime)
         {
             nowTime += Time.deltaTime;
-            btnSlider.value = (nowTime / coolTime);
+            btnSlider.value = nowTime / coolTime;
             yield return null;
         }
         ChargingEffectObj.SetActive(true);

@@ -245,9 +245,6 @@ public class SubPlayer : SubPlayerParent
             }           
 
             ResetAttackDealy();
-
-            if (nowEquipWeapon.weaponSetInfo.attackType == AttackType.Range && nowEquipWeapon.currentAmmo <= 0)
-                nowEquipWeapon.currentAmmo = nowEquipWeapon.maxAmmo;
         }
         base.Attack();
     }
@@ -308,16 +305,16 @@ public class SubPlayer : SubPlayerParent
         if(other.CompareTag("EnemyBullet"))
         {
             if (other.GetComponent<Rigidbody>() != null)
-                Destroy(other.gameObject);
+                other.gameObject.SetActive(false);
 
             if (isOnDamage)
                 return;
 
             bool bossAttack = other.name.Equals("BossMeleeArea");
-
             Bullet enemyBullet = other.GetComponent<Bullet>();
+            int incomingDamage = enemyBullet != null ? enemyBullet.damage : 0;
 
-            StartCoroutine(OnDamage(bossAttack, enemyBullet.damage));
+            StartCoroutine(OnDamage(bossAttack, incomingDamage));
         }
     }
 
@@ -360,3 +357,9 @@ public class SubPlayer : SubPlayerParent
         }
     }
 }
+
+
+
+
+
+

@@ -1,5 +1,6 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class BtnClickAnim : MonoBehaviour
@@ -13,13 +14,15 @@ public class BtnClickAnim : MonoBehaviour
         if (obj == null)
             obj = transform.gameObject;
     }
+
     public void StartClickAnim()
     {
-        LeanTween.scale(obj, scaleValue, animTime / 2f);
-        LeanTween.delayedCall(animTime / 2f, 
-            () => {
-                LeanTween.scale(obj, Vector3.one, animTime / 2f);
-            });
+        if (obj == null)
+            return;
 
+        obj.transform.DOKill();
+        Sequence sequence = DOTween.Sequence();
+        sequence.Append(obj.transform.DOScale(scaleValue, animTime / 2f));
+        sequence.Append(obj.transform.DOScale(Vector3.one, animTime / 2f));
     }
 }
